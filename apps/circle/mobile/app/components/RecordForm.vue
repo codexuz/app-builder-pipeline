@@ -10,7 +10,8 @@ const notify = useNotify()
 const saving = ref(false)
 const errors = ref<Record<string, string>>({})
 
-const schema = formSchema(props.entity)
+const fields = editableFields(props.entity, true)
+const schema = formSchema(props.entity, fields)
 const state = reactive<Record<string, any>>(
   props.record ? rowToFormState(props.entity, props.record) : newFormState(props.entity, user.value?.id, props.preset)
 )
@@ -29,7 +30,7 @@ async function submit() {
   }
   saving.value = true
   try {
-    const payload = formStateToPayload(props.entity, state)
+    const payload = formStateToPayload(props.entity, state, fields)
     const row = props.record ? await records.update(props.record.id, payload) : await records.create(payload)
     await notify.toast(`${props.entity.label} ${props.record ? 'updated' : 'created'}`, 'success')
     emit('saved', row)
@@ -46,7 +47,7 @@ defineExpose({ submit, saving })
 <template>
   <form @submit.prevent="submit">
     <ion-list>
-      <FieldInput v-for="f in entity.fields" :key="f.name" v-model="state[f.name]" :field="f" :error="errors[f.name]" />
+      <FieldInput v-for="f in fields" :key="f.name" v-model="state[f.name]" :field="f" :error="errors[f.name]" />
     </ion-list>
     <div class="ion-padding">
       <ion-button type="submit" expand="block" :disabled="saving">

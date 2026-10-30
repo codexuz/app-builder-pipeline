@@ -1,8 +1,8 @@
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-// Shared by the web (Nuxt UI) and mobile (Ionic) apps of every product.
-// Both are static single-page builds that talk to Supabase directly, protected by row level security.
+// Shared by the web (Nuxt UI) and mobile (Ionic) apps of every product. Both talk to Supabase directly,
+// protected by row-level security. Single-page by default; the web app turns on server rendering for public pages.
 export default defineNuxtConfig({
   ssr: false,
 
@@ -27,11 +27,6 @@ export default defineNuxtConfig({
       nuxt.options.alias['#schema'] = resolve(nuxt.options.rootDir, '../shared/schema.ts')
     }
   ],
-
-  // Plain static output in .output/public, used by Vercel and Capacitor alike.
-  nitro: {
-    preset: 'static'
-  },
 
   vite: {
     optimizeDeps: {

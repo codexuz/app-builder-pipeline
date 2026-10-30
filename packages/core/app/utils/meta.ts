@@ -1,6 +1,6 @@
 // Runtime view of app.spec.yaml. The generator writes app/generated/schema.ts in this shape;
 // generic screens read it so every entity gets list, detail, create and edit pages for free.
-import { entities } from '#core/schema'
+import { app, entities } from '#core/schema'
 import { formatValue } from '#core/utils/format'
 
 export const ROLES = ['viewer', 'member', 'admin', 'owner'] as const
@@ -27,9 +27,14 @@ export interface FieldMeta {
   help?: string
   list: boolean
   search: boolean
+  staff: boolean
+  readonly: boolean
+  auto: boolean
   alias?: string
   fk?: string
 }
+
+export type Access = 'team' | 'private' | 'members' | 'public' | 'customer' | 'inbox'
 
 export interface EntityMeta {
   name: string
@@ -41,8 +46,11 @@ export interface EntityMeta {
   description?: string
   fields: FieldMeta[]
   permissions: Record<'read' | 'create' | 'update' | 'delete', Role>
+  access: Access
   own: ('update' | 'delete')[]
-  visibility: 'org' | 'own' | 'public'
+  customerCan: ('update' | 'delete')[]
+  publicRead: boolean
+  createdByFunction: boolean
   attachments: boolean
   realtime: boolean
   sort: { field: string, dir: 'asc' | 'desc' }
@@ -54,12 +62,34 @@ export interface AppMeta {
   name: string
   slug: string
   description: string
-  tenancy: 'org' | 'user'
+  type: 'team' | 'personal' | 'business' | 'marketplace'
   color: string
   appId: string
   currency: string
   locale: string
   publicProfiles: boolean
+  publicSite: boolean
+}
+
+export interface CommerceMeta {
+  product: string
+  price: string
+  stock?: string
+  active?: string
+  payments: string[]
+  delivery: { fee: number, freeFrom?: number }
+  orderFields: FieldMeta[]
+}
+
+export type SectionMeta =
+  | { type: 'entity', entity: string, title?: string, limit: number }
+  | { type: 'text', title: string, body: string }
+  | { type: 'form', entity: string, title?: string, description?: string }
+
+export interface SiteMeta {
+  hero?: { title: string, subtitle?: string, cta?: { label: string, to: string } }
+  sections: SectionMeta[]
+  contact: { phone?: string, email?: string, address?: string, hours?: string, telegram?: string, instagram?: string }
 }
 
 export type CardMeta =
@@ -93,7 +123,8 @@ export function selectFor(e: EntityMeta): string {
     f.type === 'user'
       ? `${f.alias}:profiles!${f.fk}(${PROFILE_COLUMNS})`
       : `${f.alias}:${f.to}!${f.fk}(${titleColumns(entityByName(f.to!)!)})`)
-  return ['*', ...embeds, `creator:profiles!${e.name}_created_by_fkey(${PROFILE_COLUMNS})`].join(', ')
+  const seller = app.type === 'marketplace' && (e.access === 'public' || e.access === 'customer') ? ['seller:organizations(id, name)'] : []
+  return ['*', ...embeds, ...seller, `creator:profiles!${e.name}_created_by_fkey(${PROFILE_COLUMNS})`].join(', ')
 }
 export const titleSelectFor = (e: EntityMeta) => titleColumns(e)
 
@@ -101,6 +132,7 @@ export const personName = (p?: Profile | null) => p?.full_name || p?.email || 'U
 
 export function recordTitle(e: EntityMeta, row: Record<string, any> | null | undefined): string {
   if (!row) return '—'
+  if (e.name === 'shop_order') return `Order #${row.number}`
   const f = fieldOf(e, e.title)
   if (!f) return row.id
   if (f.type === 'relation') return recordTitle(entityByName(f.to!)!, row[f.alias!])
@@ -110,3 +142,16 @@ export function recordTitle(e: EntityMeta, row: Record<string, any> | null | und
 }
 
 export const navEntities = () => entities.filter(e => e.nav)
+export const hasValue = (v: unknown) => v !== null && v !== undefined && v !== '' && !(Array.isArray(v) && !v.length)
+
+// Rows anyone can browse across workspaces (catalogs, community posts, public reviews).
+export const isShared = (e: EntityMeta) => e.access === 'public' || e.access === 'members' || e.publicRead
+// Entities with a page on the public site or shop.
+export const isPublicEntity = (e: EntityMeta) => e.access === 'public' || e.publicRead
+// Entities customers or visitors create themselves (bookings, reviews, messages); orders come from checkout.
+export const isSubmittable = (e: EntityMeta) => (e.access === 'customer' || e.access === 'inbox') && !e.createdByFunction
+// Fields a person fills in. Staff-only fields are left out for customers and visitors.
+export const editableFields = (e: EntityMeta, staff: boolean) =>
+  e.fields.filter(f => !f.readonly && !f.auto && (staff || !f.staff))
+// Workspace (staff) pages live under /app; the root belongs to the public site.
+export const appPath = (e: EntityMeta, ...rest: string[]) => ['/app', e.slug, ...rest].join('/')

@@ -23,7 +23,8 @@ const loading = ref(true)
 const page = ref(1)
 const search = ref('')
 const filters = reactive<Record<string, string>>({})
-const scope = ref<'workspace' | 'all'>(props.entity.visibility === 'public' ? 'all' : 'workspace')
+// Staff manage their own workspace's rows; only community data (access members) spans workspaces.
+const scope = ref<'workspace' | 'all'>(props.entity.access === 'members' ? 'all' : 'workspace')
 const sorting = ref([{ id: props.entity.sort.field, desc: props.entity.sort.dir === 'desc' }])
 
 // Select items need a non-empty value, so "no filter" is a sentinel.
@@ -108,8 +109,8 @@ async function remove(row: Row) {
 }
 
 const actionItems = (row: Row) => [
-  [{ label: 'Open', icon: 'i-lucide-eye', to: `/${props.entity.slug}/${row.id}` }],
-  ...(can(props.entity, 'update', row) ? [[{ label: 'Edit', icon: 'i-lucide-pencil', to: `/${props.entity.slug}/${row.id}/edit` }]] : []),
+  [{ label: 'Open', icon: 'i-lucide-eye', to: `/app/${props.entity.slug}/${row.id}` }],
+  ...(can(props.entity, 'update', row) ? [[{ label: 'Edit', icon: 'i-lucide-pencil', to: `/app/${props.entity.slug}/${row.id}/edit` }]] : []),
   ...(can(props.entity, 'delete', row) ? [[{ label: 'Delete', icon: 'i-lucide-trash-2', color: 'error' as const, onSelect: () => remove(row) }]] : [])
 ]
 
@@ -120,7 +121,7 @@ onMounted(() => {
   unsubscribe = records.subscribe(() => {
     clearTimeout(refreshTimer)
     refreshTimer = setTimeout(load, 400)
-  })
+  }, scope.value)
 })
 onBeforeUnmount(() => unsubscribe())
 
@@ -147,7 +148,7 @@ defineExpose({ reload: load })
         class="w-40"
       />
       <UTabs
-        v-if="entity.visibility === 'public' && !where"
+        v-if="entity.access === 'members' && !where"
         v-model="scope"
         :items="[{ label: 'Everyone', value: 'all' }, { label: 'Mine', value: 'workspace' }]"
         :content="false"
@@ -166,7 +167,7 @@ defineExpose({ reload: load })
       class="rounded-lg border border-default"
     >
       <template v-for="(f, i) in listFields" :key="f.name" #[`${f.name}-cell`]="{ row }">
-        <ULink v-if="i === 0" :to="`/${entity.slug}/${row.original.id}`" class="font-medium text-highlighted hover:text-primary">
+        <ULink v-if="i === 0" :to="`/app/${entity.slug}/${row.original.id}`" class="font-medium text-highlighted hover:text-primary">
           {{ f.name === entity.title ? recordTitle(entity, row.original) : formatValue(f, row.original[f.name]) }}
         </ULink>
         <EntityValue v-else :field="f" :row="row.original" />

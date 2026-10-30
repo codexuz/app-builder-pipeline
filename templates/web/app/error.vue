@@ -21,7 +21,7 @@ const retry = () => window.location.reload()
         {{ notFound ? 'The page you are looking for does not exist.' : error.statusMessage || error.message }}
       </p>
       <UButton v-if="offline" label="Try again" icon="i-lucide-refresh-cw" @click="retry" />
-      <UButton v-else label="Go to the dashboard" @click="clearError({ redirect: '/' })" />
+      <UButton v-else label="Go to the home page" @click="clearError({ redirect: '/' })" />
     </div>
   </UApp>
 </template>

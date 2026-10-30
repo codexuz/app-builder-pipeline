@@ -3,12 +3,13 @@ export const app = {
   "name": "Circle",
   "slug": "circle",
   "description": "A small community to share posts, comment and follow people.",
-  "tenancy": "user",
+  "type": "personal",
   "color": "violet",
   "appId": "com.circle.social",
   "currency": "USD",
   "locale": "en-US",
-  "publicProfiles": true
+  "publicProfiles": true,
+  "publicSite": false
 }
 
 export const entities = [
@@ -26,6 +27,9 @@ export const entities = [
         "required": true,
         "unique": false,
         "max": 140,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Headline",
         "list": true,
         "search": true
@@ -36,6 +40,9 @@ export const entities = [
         "required": true,
         "unique": false,
         "max": 5000,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Body",
         "list": false,
         "search": false
@@ -52,6 +59,9 @@ export const entities = [
           "showcase",
           "news"
         ],
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Topic",
         "list": true,
         "search": false
@@ -61,6 +71,9 @@ export const entities = [
         "type": "url",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Link",
         "list": true,
         "search": false
@@ -70,6 +83,9 @@ export const entities = [
         "type": "tags",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Tags",
         "list": true,
         "search": false
@@ -81,8 +97,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "members",
     "own": [],
-    "visibility": "public",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": true,
     "realtime": true,
     "sort": {
@@ -115,6 +134,9 @@ export const entities = [
         "required": true,
         "unique": false,
         "to": "post",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Post",
         "list": true,
         "search": false,
@@ -128,6 +150,9 @@ export const entities = [
         "unique": false,
         "max": 2000,
         "list": true,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Body",
         "search": false
       }
@@ -138,8 +163,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "members",
     "own": [],
-    "visibility": "public",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": false,
     "realtime": true,
     "sort": {
@@ -163,6 +191,9 @@ export const entities = [
         "label": "Following",
         "required": true,
         "unique": true,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "list": true,
         "search": false,
         "alias": "following",
@@ -175,8 +206,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "members",
     "own": [],
-    "visibility": "public",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": false,
     "realtime": true,
     "sort": {
@@ -200,6 +234,9 @@ export const entities = [
         "required": true,
         "unique": true,
         "to": "post",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Post",
         "list": true,
         "search": false,
@@ -211,6 +248,9 @@ export const entities = [
         "type": "text",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Note",
         "list": true,
         "search": true
@@ -222,8 +262,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "team",
     "own": [],
-    "visibility": "org",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": false,
     "realtime": true,
     "sort": {
@@ -267,6 +310,10 @@ export const dashboard = [
     "label": "My posts by topic"
   }
 ]
+
+export const commerce = null
+
+export const site = null
 
 export interface Post {
   id: string

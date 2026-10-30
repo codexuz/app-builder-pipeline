@@ -1,0 +1,65 @@
+# Marketplace (type marketplace): many sellers, one catalog, customers buy from several sellers in one cart.
+# Each seller is a workspace with its own staff; a cart is split into one order per seller at checkout.
+app:
+  name: Bozor
+  slug: bozor-market
+  description: Thousands of products from local sellers, delivered to your door.
+  type: marketplace
+  color: violet
+  appId: uz.bozor.market
+  currency: UZS
+
+entities:
+  - name: product
+    icon: i-lucide-package
+    access: public
+    attachments: true
+    fields:
+      - { name: name, type: text, required: true, max: 200 }
+      - { name: price, type: money, required: true, min: 0 }
+      - { name: old_price, type: money, min: 0, label: Price before discount, list: false }
+      - { name: category, type: enum, required: true, default: home, options: [electronics, clothing, shoes, home, beauty, kids, food, books, sports] }
+      - { name: brand, type: text, max: 120 }
+      - { name: description, type: longtext, max: 10000 }
+      - { name: stock, type: integer, required: true, default: 0, min: 0 }
+      - { name: active, type: boolean, default: true, label: On sale }
+      - { name: tags, type: tags }
+
+  - name: review
+    icon: i-lucide-star
+    access: customer
+    publicRead: true
+    customerCan: [update, delete]
+    fields:
+      - { name: product_id, type: relation, to: product, required: true, cascade: true }
+      - { name: rating, type: integer, required: true, min: 1, max: 5 }
+      - { name: comment, type: longtext, required: true, max: 2000, list: true }
+
+  - name: question
+    icon: i-lucide-message-circle-question
+    access: customer
+    publicRead: true
+    fields:
+      - { name: product_id, type: relation, to: product, required: true, cascade: true }
+      - { name: question, type: longtext, required: true, max: 1000, list: true }
+      - { name: answer, type: longtext, max: 2000, staff: true, list: true }
+
+commerce:
+  product: product
+  price: price
+  stock: stock
+  active: active
+  payments: [cash]
+  delivery: { fee: 15000, freeFrom: 200000 }
+
+site:
+  hero:
+    title: Everything you need, from sellers near you
+    subtitle: Free delivery from 200 000 UZS. Pay in cash when it arrives.
+    cta: { label: Browse products, to: /products }
+  sections:
+    - { type: entity, entity: product, title: New arrivals, limit: 12 }
+    - { type: text, title: Sell on Bozor, body: "Open your shop in two minutes: sign in, choose Sell on Bozor, add products. Orders arrive in your seller dashboard." }
+  contact:
+    phone: "+998 71 200 00 00"
+    telegram: bozor_support

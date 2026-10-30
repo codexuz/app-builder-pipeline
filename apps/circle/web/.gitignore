@@ -12,3 +12,4 @@ android/app/build
 ios/App/Pods
 supabase/.temp
 supabase/.branches
+.vercel

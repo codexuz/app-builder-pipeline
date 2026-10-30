@@ -1,113 +1,44 @@
 <script setup lang="ts">
-import { app, dashboard } from '#core/schema'
-import { entityByName, fieldOf, navEntities } from '#core/utils/meta'
+import { app, commerce, entities, site } from '#core/schema'
+import { entityByName, isPublicEntity, type SectionMeta } from '#core/utils/meta'
 
-const { current } = useWorkspace()
-const { user } = useAuth()
-const stats = ref<Record<string, any> | null>(null)
-const error = ref('')
+definePageMeta({ layout: 'site' })
 
-async function load() {
-  if (!current.value) return
-  const { data, error: err } = await useSupabase().rpc('dashboard_stats', { p_org: current.value.id })
-  if (err) error.value = friendlyError(err)
-  else stats.value = data as Record<string, any>
+const catalog = entityByName(commerce?.product ?? '') ?? entities.find(isPublicEntity)
+const hero = site?.hero ?? {
+  title: app.name,
+  subtitle: app.description,
+  cta: catalog ? { label: `Browse ${catalog.plural.toLowerCase()}`, to: `/${catalog.slug}` } : undefined
 }
-watch(() => current.value?.id, load, { immediate: true })
+const sections: SectionMeta[] = site?.sections.length
+  ? site.sections
+  : catalog ? [{ type: 'entity', entity: catalog.name, limit: 8 }] : []
+const entityOf = (name: string) => entityByName(name)!
 
-const tiles = computed(() => dashboard.map((c, i) => ({ c, i, e: entityByName(c.entity)! })).filter(t => t.c.type !== 'breakdown'))
-const breakdowns = computed(() => dashboard.map((c, i) => ({ c, i, e: entityByName(c.entity)! })).filter(t => t.c.type === 'breakdown'))
-const recent = navEntities()[0]
-
-function tileValue(c: (typeof dashboard)[number], i: number) {
-  const v = Number(stats.value?.[`c${i}`] ?? 0)
-  if (c.type === 'sum' && fieldOf(entityByName(c.entity)!, c.field)?.type === 'money') return formatMoney(v)
-  return new Intl.NumberFormat(app.locale).format(v)
-}
-const tileLabel = (c: (typeof dashboard)[number]) => c.label ?? entityByName(c.entity)!.plural
-
-function breakdownRows(c: (typeof dashboard)[number], i: number) {
-  if (c.type !== 'breakdown') return []
-  const counts = (stats.value?.[`c${i}`] ?? {}) as Record<string, number>
-  const f = fieldOf(entityByName(c.entity)!, c.field)!
-  const keys = f.type === 'boolean' ? ['true', 'false'] : f.options ?? []
-  const total = Object.values(counts).reduce((a, b) => a + b, 0)
-  return keys.map(k => ({
-    key: k,
-    label: f.type === 'boolean' ? (k === 'true' ? 'Yes' : 'No') : humanize(k),
-    count: counts[k] ?? 0,
-    pct: total ? Math.round(((counts[k] ?? 0) / total) * 100) : 0,
-    color: f.type === 'enum' ? optionColor(f, k) : 'primary'
-  }))
-}
-
-const greeting = computed(() => {
-  const h = new Date().getHours()
-  const name = user.value?.user_metadata?.full_name?.split(' ')[0]
-  return `${h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening'}${name ? `, ${name}` : ''}`
-})
-useHead({ title: 'Dashboard' })
+useSeoMeta({ description: app.description, ogTitle: app.name, ogDescription: app.description })
 </script>
 
 <template>
-  <UDashboardPanel id="dashboard">
-    <template #header>
-      <UDashboardNavbar title="Dashboard" icon="i-lucide-layout-dashboard">
-        <template #leading>
-          <UDashboardSidebarCollapse />
-        </template>
-      </UDashboardNavbar>
-    </template>
+  <div v-if="app.publicSite">
+    <UPageHero
+      :title="hero.title"
+      :description="hero.subtitle"
+      :links="hero.cta ? [{ label: hero.cta.label, to: hero.cta.to, size: 'xl', trailingIcon: 'i-lucide-arrow-right' }] : []"
+    />
 
-    <template #body>
-      <div>
-        <h1 class="text-xl font-semibold text-highlighted">{{ greeting }}</h1>
-        <p class="text-sm text-muted">{{ current?.personal ? app.description : current?.name }}</p>
-      </div>
-
-      <UAlert v-if="error" color="error" variant="subtle" icon="i-lucide-circle-alert" title="Could not load the dashboard" :description="error" />
-
-      <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <ULink v-for="{ c, i, e } in tiles" :key="i" :to="`/${e.slug}`" class="group">
-          <UCard class="h-full transition-colors group-hover:ring-primary/50">
-            <div class="flex items-start justify-between gap-3">
-              <div class="min-w-0">
-                <p class="truncate text-sm text-muted">{{ tileLabel(c) }}</p>
-                <USkeleton v-if="!stats" class="mt-2 h-7 w-20" />
-                <p v-else class="mt-1 text-2xl font-semibold text-highlighted tabular-nums">{{ tileValue(c, i) }}</p>
-              </div>
-              <div class="rounded-md bg-primary/10 p-2 text-primary">
-                <UIcon :name="(c.type !== 'breakdown' && c.icon) || e.icon" class="size-5" />
-              </div>
-            </div>
-          </UCard>
-        </ULink>
-      </div>
-
-      <div v-if="breakdowns.length" class="grid gap-4 lg:grid-cols-2">
-        <UCard v-for="{ c, i, e } in breakdowns" :key="i">
-          <template #header>
-            <h2 class="font-semibold text-highlighted">{{ c.label ?? `${e.plural} by ${fieldOf(e, (c as any).field)?.label.toLowerCase()}` }}</h2>
-          </template>
-          <ul class="space-y-3">
-            <li v-for="r in breakdownRows(c, i)" :key="r.key">
-              <div class="mb-1 flex justify-between text-sm">
-                <span>{{ r.label }}</span>
-                <span class="text-muted tabular-nums">{{ r.count }}</span>
-              </div>
-              <UProgress :model-value="r.pct" :color="r.color" size="sm" />
-            </li>
-          </ul>
-        </UCard>
-      </div>
-
-      <section v-if="recent" class="space-y-3">
-        <div class="flex items-center justify-between">
-          <h2 class="font-semibold text-highlighted">Recent {{ recent.plural.toLowerCase() }}</h2>
-          <UButton :to="`/${recent.slug}`" label="View all" trailing-icon="i-lucide-arrow-right" color="neutral" variant="ghost" size="sm" />
+    <template v-for="(s, i) in sections" :key="i">
+      <UPageSection v-if="s.type === 'entity'" :title="s.title ?? entityOf(s.entity).plural" :ui="{ container: 'py-10 sm:py-12 lg:py-14' }">
+        <SiteRecordGrid :entity="entityOf(s.entity)" :limit="s.limit" />
+        <div v-if="entityOf(s.entity).access === 'public'" class="flex justify-center">
+          <UButton :to="`/${entityOf(s.entity).slug}`" label="View all" color="neutral" variant="outline" trailing-icon="i-lucide-arrow-right" />
         </div>
-        <EntityTable :entity="recent" :page-size="5" compact />
-      </section>
+      </UPageSection>
+      <UPageSection v-else-if="s.type === 'text'" :title="s.title" :description="s.body" :ui="{ container: 'py-10 sm:py-12 lg:py-14' }" />
+      <UPageSection v-else :title="s.title ?? entityOf(s.entity).label" :description="s.description" :ui="{ container: 'py-10 sm:py-12 lg:py-14' }">
+        <div class="mx-auto w-full max-w-2xl">
+          <SitePublicForm :entity="entityOf(s.entity)" />
+        </div>
+      </UPageSection>
     </template>
-  </UDashboardPanel>
+  </div>
 </template>

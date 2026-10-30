@@ -3,7 +3,7 @@ app:
   name: Acme CRM
   slug: acme-crm
   description: Track companies, contacts, deals and follow-up tasks as a team.
-  tenancy: org
+  type: team
   color: indigo
   appId: com.acme.crm
   currency: USD

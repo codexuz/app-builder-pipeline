@@ -1,7 +1,10 @@
 -- GENERATED from app.spec.yaml by the pipeline. Do not edit by hand.
 -- Once this migration is deployed, schema changes go into new, later migrations (see AGENTS.md).
 
--- User tenancy: every account gets a private workspace at sign-up.
+create or replace function public.app_type()
+returns text language sql stable as $$ select 'personal'::text $$;
+
+-- Personal apps: every account gets a private workspace at sign-up.
 create or replace function public.after_signup(p_user uuid)
 returns void language plpgsql security definer set search_path = '' as $$
 declare
@@ -11,7 +14,7 @@ begin
   insert into public.memberships (org_id, user_id, role) values (v_org, p_user, 'owner');
 end $$;
 
--- Account -------------------------------------------------------------
+-- Account (access: team) ----------------------------------------
 create table public.account (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
@@ -27,7 +30,7 @@ create table public.account (
   constraint account_name_key unique (org_id, name)
 );
 
--- Category -------------------------------------------------------------
+-- Category (access: team) ----------------------------------------
 create table public.category (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
@@ -42,7 +45,7 @@ create table public.category (
   constraint category_name_key unique (org_id, name)
 );
 
--- Transaction -------------------------------------------------------------
+-- Transaction (access: team) ----------------------------------------
 create table public.entry (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
@@ -64,7 +67,7 @@ create table public.entry (
   constraint entry_notes_len check (char_length(notes) <= 20000)
 );
 
--- Budget -------------------------------------------------------------
+-- Budget (access: team) ----------------------------------------
 create table public.budget (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
@@ -112,7 +115,7 @@ create index budget_org_idx on public.budget (org_id, created_at desc);
 create index budget_category_id_idx on public.budget (category_id);
 
 create or replace function public.account_guard()
-returns trigger language plpgsql security definer set search_path = '' as $$
+returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
   if tg_op = 'UPDATE' then
     if new.org_id <> old.org_id then
@@ -120,6 +123,9 @@ begin
     end if;
     new.created_by := old.created_by;
     new.created_at := old.created_at;
+  elsif current_user in ('anon', 'authenticated') then
+    -- Apps cannot claim to be someone else; visitors create anonymous rows.
+    new.created_by := auth.uid();
   else
     new.created_by := coalesce(auth.uid(), new.created_by);
   end if;
@@ -135,7 +141,7 @@ create trigger account_audit after insert or update or delete on public.account
   for each row execute function public.audit_row();
 
 create or replace function public.category_guard()
-returns trigger language plpgsql security definer set search_path = '' as $$
+returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
   if tg_op = 'UPDATE' then
     if new.org_id <> old.org_id then
@@ -143,6 +149,9 @@ begin
     end if;
     new.created_by := old.created_by;
     new.created_at := old.created_at;
+  elsif current_user in ('anon', 'authenticated') then
+    -- Apps cannot claim to be someone else; visitors create anonymous rows.
+    new.created_by := auth.uid();
   else
     new.created_by := coalesce(auth.uid(), new.created_by);
   end if;
@@ -158,7 +167,7 @@ create trigger category_audit after insert or update or delete on public.categor
   for each row execute function public.audit_row();
 
 create or replace function public.entry_guard()
-returns trigger language plpgsql security definer set search_path = '' as $$
+returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
   if tg_op = 'UPDATE' then
     if new.org_id <> old.org_id then
@@ -166,6 +175,9 @@ begin
     end if;
     new.created_by := old.created_by;
     new.created_at := old.created_at;
+  elsif current_user in ('anon', 'authenticated') then
+    -- Apps cannot claim to be someone else; visitors create anonymous rows.
+    new.created_by := auth.uid();
   else
     new.created_by := coalesce(auth.uid(), new.created_by);
   end if;
@@ -186,7 +198,7 @@ create trigger entry_audit after insert or update or delete on public.entry
   for each row execute function public.audit_row();
 
 create or replace function public.budget_guard()
-returns trigger language plpgsql security definer set search_path = '' as $$
+returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
   if tg_op = 'UPDATE' then
     if new.org_id <> old.org_id then
@@ -194,6 +206,9 @@ begin
     end if;
     new.created_by := old.created_by;
     new.created_at := old.created_at;
+  elsif current_user in ('anon', 'authenticated') then
+    -- Apps cannot claim to be someone else; visitors create anonymous rows.
+    new.created_by := auth.uid();
   else
     new.created_by := coalesce(auth.uid(), new.created_by);
   end if;
@@ -254,7 +269,7 @@ create policy budget_update on public.budget for update to authenticated
 create policy budget_delete on public.budget for delete to authenticated
   using (public.has_org_role(org_id, 'admin'));
 
--- Realtime: list pages refresh live when rows change.
+-- Realtime: lists refresh live when rows change.
 do $$
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then

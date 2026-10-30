@@ -14,7 +14,7 @@ async function submit() {
   try {
     await updatePassword(password.value)
     await notify.toast('Password updated', 'success')
-    router.navigate('/', 'root', 'replace')
+    router.navigate('/app', 'root', 'replace')
   } catch (err: any) {
     await notify.toast(err?.message ?? 'Could not update password', 'danger')
   } finally {

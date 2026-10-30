@@ -1,0 +1,7 @@
+{
+  "name": "@bozor-market/shared",
+  "private": true,
+  "type": "module",
+  "description": "Generated schema for Bozor, shared by its web and mobile apps.",
+  "main": "./schema.ts"
+}

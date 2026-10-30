@@ -18,7 +18,7 @@ async function onSubmit() {
   try {
     await updatePassword(state.password)
     toast.add({ title: 'Password updated', color: 'success' })
-    await navigateTo('/')
+    await navigateTo('/app')
   } catch (err: any) {
     toast.add({ title: 'Could not update password', description: err?.message, color: 'error' })
   } finally {

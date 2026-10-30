@@ -6,8 +6,12 @@ useHead({ title: app.name, htmlAttrs: { lang: app.locale.split('-')[0] } })
 const route = useRouter().currentRoute
 const { user } = useAuth()
 const { current } = useWorkspace()
-// The menu only exists once someone is signed in and inside a workspace.
-const showMenu = computed(() => Boolean(user.value && current.value) && !AUTH_ROUTES.has(route.value.path) && !route.value.path.startsWith('/invite/'))
+// Public pages always have the menu; the workspace area needs someone signed in with a workspace.
+const showMenu = computed(() => {
+  const path = route.value.path
+  if (AUTH_ROUTES.has(path) || path.startsWith('/invite/')) return false
+  return inWorkspaceArea(path) ? Boolean(user.value && current.value) : app.publicSite
+})
 </script>
 
 <template>

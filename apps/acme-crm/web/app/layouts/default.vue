@@ -10,12 +10,12 @@ const open = ref(false)
 
 const nav = computed<NavigationMenuItem[][]>(() => [
   [
-    { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/', exact: true },
-    ...navEntities().map(e => ({ label: e.plural, icon: e.icon, to: `/${e.slug}` }))
+    { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/app', exact: true },
+    ...navEntities().map(e => ({ label: e.plural, icon: e.icon, to: `/app/${e.slug}` }))
   ],
   [
-    ...(teams ? [{ label: 'Members', icon: 'i-lucide-users', to: '/settings/members' }] : []),
-    { label: 'Settings', icon: 'i-lucide-settings', to: teams && isAdmin.value ? '/settings' : '/settings/profile' }
+    ...(teams ? [{ label: 'Members', icon: 'i-lucide-users', to: '/app/settings/members' }] : []),
+    { label: 'Settings', icon: 'i-lucide-settings', to: teams && isAdmin.value ? '/app/settings' : '/app/settings/profile' }
   ]
 ].map(group => group.map(item => ({ ...item, onSelect: () => { open.value = false } }))))
 
@@ -25,12 +25,12 @@ const workspaceItems = computed<DropdownMenuItem[][]>(() => [
     icon: w.id === ws.current.value?.id ? 'i-lucide-check' : 'i-lucide-building',
     onSelect: () => switchTo(w.id)
   })),
-  [{ label: 'New workspace', icon: 'i-lucide-plus', to: '/onboarding?new=1' }]
+  ...(app.type === 'business' ? [] : [[{ label: 'New workspace', icon: 'i-lucide-plus', to: '/app/onboarding?new=1' }]])
 ])
 
 async function switchTo(id: string) {
   ws.select(id)
-  await navigateTo('/')
+  await navigateTo('/app')
 }
 
 const displayName = computed(() => user.value?.user_metadata?.full_name || user.value?.email || '')
@@ -38,7 +38,8 @@ const displayName = computed(() => user.value?.user_metadata?.full_name || user.
 const userItems = computed<DropdownMenuItem[][]>(() => [
   [{ label: user.value?.email ?? '', type: 'label' }],
   [
-    { label: 'Profile', icon: 'i-lucide-user', to: '/settings/profile' },
+    { label: 'Profile', icon: 'i-lucide-user', to: '/app/settings/profile' },
+    ...(app.publicSite ? [{ label: 'View public site', icon: 'i-lucide-external-link', to: '/' }] : []),
     {
       label: colorMode.value === 'dark' ? 'Light mode' : 'Dark mode',
       icon: colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon',

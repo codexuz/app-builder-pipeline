@@ -1,34 +1,56 @@
 # App pipeline
 
-A Turborepo that turns one request into a real product: a **Nuxt UI** web app on **Vercel**, an **Ionic +
-Capacitor** app for Android and iOS, and a **Supabase** backend shared by both. It works for team apps (CRM, ERP,
-clinic, inventory), personal apps (budget, journal, habits) and social apps (posts, comments, follows).
+Turn one request into a real small or medium app: an online shop, a marketplace, a service website, a booking site,
+a team tool, a personal app or a community. Any field. Each product gets a **Nuxt UI** web app on **Vercel**, an
+**Ionic + Capacitor** app for Android and iOS, and a **Supabase** backend shared by both. No mock data.
 
 ```bash
 npm install
 # With Claude Code:
-/build-app A clinic app with patients, appointments, staff roles and invoices
-# Or by hand / with any other AI agent (they read AGENTS.md):
-npm run new -- specs/examples/crm.yaml
-npm run verify -- apps/acme-crm
+/build-app A flower shop in Tashkent with same-day delivery
+# Or by hand, or with any other AI agent (they read AGENTS.md):
+npm run new -- specs/examples/flower-shop.yaml
+npm run verify -- apps/bloom-flowers
 ```
 
-## How it works
+## Why it stays correct
+
+You describe the app in a short YAML spec, using a few fixed words, and the pipeline does the rest.
+
+**One `type` for the app:** `business` (one shop or company), `marketplace` (many sellers), `team` (internal tool),
+`personal` (private data or a community).
+
+**One `access` word for each kind of data:**
+
+| Word | Example | Meaning |
+|---|---|---|
+| `public` | Products, services | Anyone can read, staff edit |
+| `customer` | Bookings, reviews | Customers create theirs and see only theirs, staff manage |
+| `inbox` | Contact form | Anyone can send, only staff read |
+| `team` | Suppliers, costs | Staff only |
+| `private` | Drafts | Only the author |
+| `members` | Community posts | Every signed-in user |
+
+The generator turns those words into database security rules, and the verifier proves them by acting as a visitor,
+customer, staff member and rival seller against a real Postgres engine. Beginners only choose words. Advanced users
+add custom pages, migrations and Edge Functions wherever the spec stops; see [AGENTS.md](AGENTS.md) stage 3.
 
 ```
-request ──► app.spec.yaml ──► generator ──► SQL + RLS + schema ──► web (Nuxt UI) + mobile (Ionic)
-   (AI)      (AI, validated)   (deterministic)                        generic screens + custom features (AI)
-                                                    │
-                     verify: real Postgres (PGlite) proves tenant isolation and permissions per entity,
-                     then turbo typecheck + build for both apps
+request ──► app.spec.yaml ──► generator ──► SQL + security + checkout + schema ──► web + mobile
+   (AI)      (AI, validated)   (fixed code)                                        + custom features (AI)
+                                     │
+              verify: real Postgres proves the rules for every kind of person,
+              then turbo typecheck + build for both apps
 ```
+
+## Layout
 
 ```
 packages/pipeline   CLI (spec, generators, verifier)
-packages/core       Nuxt layer shared by web and mobile (Supabase, auth, workspaces, records, validation)
-templates/web       Nuxt UI app template
+packages/core       Nuxt layer shared by web and mobile (Supabase, auth, records, cart, validation)
+templates/web       Nuxt UI app template (public site, shop, staff area in /app)
 templates/mobile    Ionic + Capacitor app template
-specs/examples      team CRM, personal budget, social community
+specs/examples      flower shop, marketplace, salon, CRM, budget, community
 apps/<slug>/        a product: app.spec.yaml, supabase/, shared/, web/, mobile/
 ```
 
@@ -46,9 +68,10 @@ apps/<slug>/        a product: app.spec.yaml, supabase/, shared/, web/, mobile/
 
 ## Limits to know
 
-- Free tiers: Vercel Hobby is non-commercial; Supabase free projects pause after 7 idle days (500 MB DB).
-- iOS builds need a Mac; store accounts cost money (Apple $99/yr, Google $25 once).
-- The mobile app uses `@nuxtjs/ionic` 1.0, which pins Ionic 8 and Capacitor 7 (both supported releases).
-- Regulated data (HIPAA health records, payments) needs paid plans and a compliance review. The pipeline does not make an app compliant.
-- The generator covers data, permissions and CRUD screens. Product-specific screens and rules (a calendar, a kanban, stock
-  movements) are written per product by the agent, following AGENTS.md stage 3.
+- **Payments:** cash on delivery only for now. Online providers (Click, Payme, Stripe) are not built yet.
+- **Language:** screens are in English; currency and dates follow `app.locale`.
+- **Bookings:** requests that staff confirm, without automatic slot conflict checks.
+- **Variants:** no size or colour variants yet; list them as separate products.
+- **Hosting:** Vercel Hobby is non-commercial, so a shop that earns money needs a paid plan or another host. Supabase free projects pause after 7 idle days (500 MB database).
+- **Mobile:** iOS builds need a Mac; store accounts cost money (Apple $99/yr, Google $25 once). `@nuxtjs/ionic` 1.0 pins Ionic 8 and Capacitor 7.
+- **Regulated data** (health records, card data) needs paid plans and a compliance review. The pipeline does not make an app compliant.

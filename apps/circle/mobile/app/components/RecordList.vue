@@ -6,9 +6,11 @@ const props = withDefaults(defineProps<{
   entity: EntityMeta
   where?: Record<string, unknown>
   search?: string
-  scope?: 'workspace' | 'all'
+  scope?: 'workspace' | 'all' | 'mine'
   pageSize?: number
   infinite?: boolean
+  // Where a row opens; defaults to the staff page under /app.
+  linkTo?: (row: Row) => string
 }>(), { pageSize: 25, infinite: true })
 
 const records = useRecords(props.entity)
@@ -68,7 +70,7 @@ onMounted(() => {
   unsubscribe = records.subscribe(() => {
     clearTimeout(timer)
     timer = setTimeout(reload, 400)
-  })
+  }, props.scope)
 })
 onBeforeUnmount(() => unsubscribe())
 
@@ -93,7 +95,7 @@ defineExpose({ reload: () => { if (!loading.value) return reload() } })
     </div>
 
     <ion-list v-else>
-      <ion-item v-for="row in rows" :key="row.id" :router-link="`/${entity.slug}/${row.id}`" button>
+      <ion-item v-for="row in rows" :key="row.id" :router-link="linkTo ? linkTo(row) : `/app/${entity.slug}/${row.id}`" button>
         <ion-label>
           <h2>{{ recordTitle(entity, row) }}</h2>
           <p v-if="subtitle(row)">{{ subtitle(row) }}</p>

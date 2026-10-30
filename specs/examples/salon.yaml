@@ -1,0 +1,90 @@
+# Service business website (type business, no shop): services and specialists are public,
+# customers request bookings and see only their own, anyone can send a message, staff confirm in /app.
+app:
+  name: Lumen Studio
+  slug: lumen-studio
+  description: Hair, nails and skin care in the centre of Samarkand.
+  type: business
+  color: teal
+  appId: uz.lumen.studio
+  currency: UZS
+
+entities:
+  - name: service
+    icon: i-lucide-sparkles
+    access: public
+    attachments: true
+    sort: { field: name, dir: asc }
+    fields:
+      - { name: name, type: text, required: true }
+      - { name: category, type: enum, options: [hair, nails, skin, makeup], required: true, default: hair }
+      - { name: price, type: money, required: true, min: 0, label: Price from }
+      - { name: duration_minutes, type: integer, required: true, default: 60, min: 15, max: 480, label: Duration (minutes) }
+      - { name: description, type: longtext }
+
+  - name: specialist
+    icon: i-lucide-user-round
+    access: public
+    attachments: true
+    fields:
+      - { name: name, type: text, required: true }
+      - { name: role, type: text, required: true, max: 120 }
+      - { name: bio, type: longtext, max: 2000 }
+
+  - name: booking
+    icon: i-lucide-calendar-check
+    access: customer
+    customerCan: [delete]
+    title: service_id
+    sort: { field: date, dir: asc }
+    fields:
+      - { name: service_id, type: relation, to: service, required: true, label: Service }
+      - { name: specialist_id, type: relation, to: specialist, label: Specialist, help: Leave empty for the first free specialist }
+      - { name: date, type: date, required: true }
+      - { name: time, type: enum, required: true, options: ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"] }
+      - { name: phone, type: phone, required: true }
+      - { name: note, type: longtext, max: 500 }
+      - { name: status, type: enum, options: [requested, confirmed, completed, cancelled], default: requested, required: true, staff: true }
+
+  - name: testimonial
+    icon: i-lucide-quote
+    access: customer
+    publicRead: true
+    customerCan: [update, delete]
+    title: text
+    fields:
+      - { name: rating, type: integer, required: true, min: 1, max: 5 }
+      - { name: text, type: longtext, required: true, max: 1000, list: true }
+
+  - name: inquiry
+    plural: Messages
+    icon: i-lucide-mail
+    access: inbox
+    title: name
+    fields:
+      - { name: name, type: text, required: true, max: 120 }
+      - { name: phone, type: phone, required: true }
+      - { name: message, type: longtext, required: true, max: 2000, list: true }
+      - { name: status, type: enum, options: [new, answered], default: new, required: true, staff: true }
+
+dashboard:
+  - { type: count, entity: booking, label: Booking requests, where: { status: requested }, icon: i-lucide-calendar-clock }
+  - { type: count, entity: booking, label: Confirmed, where: { status: confirmed }, icon: i-lucide-calendar-check }
+  - { type: count, entity: inquiry, label: New messages, where: { status: new }, icon: i-lucide-mail }
+  - { type: breakdown, entity: booking, field: status, label: Bookings by status }
+
+site:
+  hero:
+    title: Take an hour for yourself
+    subtitle: Book a haircut, manicure or facial in a few taps. We confirm by phone within 15 minutes.
+    cta: { label: Book a visit, to: /bookings/new }
+  sections:
+    - { type: entity, entity: service, title: Services, limit: 8 }
+    - { type: entity, entity: specialist, title: Our team, limit: 6 }
+    - { type: entity, entity: testimonial, title: Reviews, limit: 6 }
+    - { type: form, entity: inquiry, title: Ask us anything }
+  contact:
+    phone: "+998 66 233 00 00"
+    address: Samarkand, Registan street 12
+    hours: Tue to Sun, 9:00 to 19:00
+    instagram: lumen.studio.uz

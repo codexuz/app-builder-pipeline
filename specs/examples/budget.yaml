@@ -1,10 +1,10 @@
-# Personal app (user tenancy): every user has a private workspace created at sign-up.
+# Personal app (type personal): every user has a private workspace created at sign-up.
 # No teams, invitations or member screens; nobody else can see the data.
 app:
   name: Pocket Budget
   slug: pocket-budget
   description: Track accounts, spending and monthly budgets.
-  tenancy: user
+  type: personal
   color: emerald
   appId: com.pocketbudget.app
   currency: USD

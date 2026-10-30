@@ -29,7 +29,7 @@ async function accept() {
     await ws.load()
     ws.select(data as string)
     toast.add({ title: `Welcome to ${invite.value?.org_name}`, color: 'success' })
-    await navigateTo('/')
+    await navigateTo('/app')
   } catch (err) {
     toast.add({ title: 'Could not join', description: friendlyError(err), color: 'error' })
   } finally {

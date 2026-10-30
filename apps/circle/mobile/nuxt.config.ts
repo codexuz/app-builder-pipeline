@@ -18,6 +18,11 @@ export default defineNuxtConfig({
     }
   },
 
+  // Capacitor ships this folder inside the app.
+  nitro: {
+    preset: 'static'
+  },
+
   ionic: {
     integrations: { meta: false },
     css: { utilities: true }

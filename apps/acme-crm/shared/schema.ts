@@ -3,12 +3,13 @@ export const app = {
   "name": "Acme CRM",
   "slug": "acme-crm",
   "description": "Track companies, contacts, deals and follow-up tasks as a team.",
-  "tenancy": "org",
+  "type": "team",
   "color": "indigo",
   "appId": "com.acme.crm",
   "currency": "USD",
   "locale": "en-US",
-  "publicProfiles": false
+  "publicProfiles": false,
+  "publicSite": false
 }
 
 export const entities = [
@@ -25,6 +26,9 @@ export const entities = [
         "type": "text",
         "required": true,
         "unique": true,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -42,6 +46,9 @@ export const entities = [
           "finance",
           "other"
         ],
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Industry",
         "list": true,
         "search": false
@@ -51,6 +58,9 @@ export const entities = [
         "type": "url",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Website",
         "list": true,
         "search": false
@@ -60,6 +70,9 @@ export const entities = [
         "type": "phone",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Phone",
         "list": true,
         "search": true
@@ -70,6 +83,9 @@ export const entities = [
         "required": false,
         "unique": false,
         "min": 0,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Employees",
         "list": true,
         "search": false
@@ -79,6 +95,9 @@ export const entities = [
         "type": "longtext",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Notes",
         "list": false,
         "search": false
@@ -90,8 +109,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "team",
     "own": [],
-    "visibility": "org",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": true,
     "realtime": true,
     "sort": {
@@ -123,6 +145,9 @@ export const entities = [
         "type": "text",
         "required": true,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Full name",
         "list": true,
         "search": true
@@ -132,6 +157,9 @@ export const entities = [
         "type": "email",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Email",
         "list": true,
         "search": true
@@ -141,6 +169,9 @@ export const entities = [
         "type": "phone",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Phone",
         "list": true,
         "search": true
@@ -150,6 +181,9 @@ export const entities = [
         "type": "text",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Job title",
         "list": true,
         "search": true
@@ -160,6 +194,9 @@ export const entities = [
         "required": false,
         "unique": false,
         "to": "company",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Company",
         "list": true,
         "search": false,
@@ -177,6 +214,9 @@ export const entities = [
           "customer",
           "churned"
         ],
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Status",
         "list": true,
         "search": false
@@ -188,6 +228,9 @@ export const entities = [
         "required": false,
         "unique": false,
         "default": "me",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "list": true,
         "search": false,
         "alias": "owner",
@@ -200,8 +243,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "team",
     "own": [],
-    "visibility": "org",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": false,
     "realtime": true,
     "sort": {
@@ -229,6 +275,9 @@ export const entities = [
         "type": "text",
         "required": true,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Title",
         "list": true,
         "search": true
@@ -239,6 +288,9 @@ export const entities = [
         "required": true,
         "unique": false,
         "to": "company",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Company",
         "list": true,
         "search": false,
@@ -251,6 +303,9 @@ export const entities = [
         "required": false,
         "unique": false,
         "to": "contact",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Contact",
         "list": true,
         "search": false,
@@ -263,6 +318,9 @@ export const entities = [
         "required": false,
         "unique": false,
         "min": 0,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Amount",
         "list": true,
         "search": false
@@ -280,6 +338,9 @@ export const entities = [
           "won",
           "lost"
         ],
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Stage",
         "list": true,
         "search": false
@@ -289,6 +350,9 @@ export const entities = [
         "type": "percent",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Probability",
         "list": true,
         "search": false
@@ -298,6 +362,9 @@ export const entities = [
         "type": "date",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Close date",
         "list": true,
         "search": false
@@ -309,6 +376,9 @@ export const entities = [
         "required": false,
         "unique": false,
         "default": "me",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "list": true,
         "search": false,
         "alias": "owner",
@@ -321,8 +391,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "team",
     "own": [],
-    "visibility": "org",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": true,
     "realtime": true,
     "sort": {
@@ -350,6 +423,9 @@ export const entities = [
         "type": "text",
         "required": true,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Title",
         "list": true,
         "search": true
@@ -359,6 +435,9 @@ export const entities = [
         "type": "date",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Due date",
         "list": true,
         "search": false
@@ -368,6 +447,9 @@ export const entities = [
         "type": "boolean",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Done",
         "list": true,
         "search": false
@@ -383,6 +465,9 @@ export const entities = [
           "normal",
           "high"
         ],
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Priority",
         "list": true,
         "search": false
@@ -393,6 +478,9 @@ export const entities = [
         "required": false,
         "unique": false,
         "to": "deal",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Deal",
         "list": true,
         "search": false,
@@ -406,6 +494,9 @@ export const entities = [
         "required": false,
         "unique": false,
         "default": "me",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "list": true,
         "search": false,
         "alias": "assignee",
@@ -418,10 +509,13 @@ export const entities = [
       "update": "member",
       "delete": "member"
     },
+    "access": "team",
     "own": [
       "delete"
     ],
-    "visibility": "org",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": false,
     "realtime": true,
     "sort": {
@@ -493,6 +587,10 @@ export const dashboard = [
     "label": "Contacts by status"
   }
 ]
+
+export const commerce = null
+
+export const site = null
 
 export interface Company {
   id: string

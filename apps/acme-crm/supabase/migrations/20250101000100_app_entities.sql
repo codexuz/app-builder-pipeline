@@ -1,7 +1,10 @@
 -- GENERATED from app.spec.yaml by the pipeline. Do not edit by hand.
 -- Once this migration is deployed, schema changes go into new, later migrations (see AGENTS.md).
 
--- Company -------------------------------------------------------------
+create or replace function public.app_type()
+returns text language sql stable as $$ select 'team'::text $$;
+
+-- Company (access: team) ----------------------------------------
 create table public.company (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
@@ -25,7 +28,7 @@ create table public.company (
   constraint company_name_key unique (org_id, name)
 );
 
--- Contact -------------------------------------------------------------
+-- Contact (access: team) ----------------------------------------
 create table public.contact (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
@@ -48,7 +51,7 @@ create table public.contact (
   constraint contact_status_chk check (status in ('lead', 'customer', 'churned'))
 );
 
--- Deal -------------------------------------------------------------
+-- Deal (access: team) ----------------------------------------
 create table public.deal (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
@@ -71,7 +74,7 @@ create table public.deal (
   constraint deal_probability_max check (probability <= 100)
 );
 
--- Task -------------------------------------------------------------
+-- Task (access: team) ----------------------------------------
 create table public.task (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
@@ -142,7 +145,7 @@ create index task_assignee_id_idx on public.task (assignee_id);
 create index task_sort_idx on public.task (org_id, due_date);
 
 create or replace function public.company_guard()
-returns trigger language plpgsql security definer set search_path = '' as $$
+returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
   if tg_op = 'UPDATE' then
     if new.org_id <> old.org_id then
@@ -150,6 +153,9 @@ begin
     end if;
     new.created_by := old.created_by;
     new.created_at := old.created_at;
+  elsif current_user in ('anon', 'authenticated') then
+    -- Apps cannot claim to be someone else; visitors create anonymous rows.
+    new.created_by := auth.uid();
   else
     new.created_by := coalesce(auth.uid(), new.created_by);
   end if;
@@ -165,7 +171,7 @@ create trigger company_audit after insert or update or delete on public.company
   for each row execute function public.audit_row();
 
 create or replace function public.contact_guard()
-returns trigger language plpgsql security definer set search_path = '' as $$
+returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
   if tg_op = 'UPDATE' then
     if new.org_id <> old.org_id then
@@ -173,6 +179,9 @@ begin
     end if;
     new.created_by := old.created_by;
     new.created_at := old.created_at;
+  elsif current_user in ('anon', 'authenticated') then
+    -- Apps cannot claim to be someone else; visitors create anonymous rows.
+    new.created_by := auth.uid();
   else
     new.created_by := coalesce(auth.uid(), new.created_by);
   end if;
@@ -193,7 +202,7 @@ create trigger contact_audit after insert or update or delete on public.contact
   for each row execute function public.audit_row();
 
 create or replace function public.deal_guard()
-returns trigger language plpgsql security definer set search_path = '' as $$
+returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
   if tg_op = 'UPDATE' then
     if new.org_id <> old.org_id then
@@ -201,6 +210,9 @@ begin
     end if;
     new.created_by := old.created_by;
     new.created_at := old.created_at;
+  elsif current_user in ('anon', 'authenticated') then
+    -- Apps cannot claim to be someone else; visitors create anonymous rows.
+    new.created_by := auth.uid();
   else
     new.created_by := coalesce(auth.uid(), new.created_by);
   end if;
@@ -224,7 +236,7 @@ create trigger deal_audit after insert or update or delete on public.deal
   for each row execute function public.audit_row();
 
 create or replace function public.task_guard()
-returns trigger language plpgsql security definer set search_path = '' as $$
+returns trigger language plpgsql security invoker set search_path = '' as $$
 begin
   if tg_op = 'UPDATE' then
     if new.org_id <> old.org_id then
@@ -232,6 +244,9 @@ begin
     end if;
     new.created_by := old.created_by;
     new.created_at := old.created_at;
+  elsif current_user in ('anon', 'authenticated') then
+    -- Apps cannot claim to be someone else; visitors create anonymous rows.
+    new.created_by := auth.uid();
   else
     new.created_by := coalesce(auth.uid(), new.created_by);
   end if;
@@ -295,7 +310,7 @@ create policy task_update on public.task for update to authenticated
 create policy task_delete on public.task for delete to authenticated
   using (public.has_org_role(org_id, 'member') and (created_by = (select auth.uid()) or public.has_org_role(org_id, 'admin')));
 
--- Realtime: list pages refresh live when rows change.
+-- Realtime: lists refresh live when rows change.
 do $$
 begin
   if exists (select 1 from pg_publication where pubname = 'supabase_realtime') then

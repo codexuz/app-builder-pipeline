@@ -45,7 +45,8 @@ function fieldSchema(f: FieldMeta): z.ZodType {
     : z.preprocess(blankToNull, s.nullable())
 }
 
-export const formSchema = (e: EntityMeta) => z.object(Object.fromEntries(e.fields.map(f => [f.name, fieldSchema(f)])))
+export const formSchema = (e: EntityMeta, fields: FieldMeta[] = e.fields.filter(f => !f.readonly && !f.auto)) =>
+  z.object(Object.fromEntries(fields.map(f => [f.name, fieldSchema(f)])))
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
@@ -80,9 +81,9 @@ export function rowToFormState(e: EntityMeta, row: Record<string, unknown>) {
   return state
 }
 
-export function formStateToPayload(e: EntityMeta, state: Record<string, unknown>) {
+export function formStateToPayload(e: EntityMeta, state: Record<string, unknown>, fields: FieldMeta[] = e.fields.filter(f => !f.readonly && !f.auto)) {
   const out: Record<string, unknown> = {}
-  for (const f of e.fields) {
+  for (const f of fields) {
     let v = blankToNull(state[f.name])
     if (typeof v === 'string' && ['text', 'longtext', 'email', 'phone', 'url'].includes(f.type)) v = v.trim() || null
     if (f.type === 'datetime' && typeof v === 'string') v = new Date(v).toISOString()

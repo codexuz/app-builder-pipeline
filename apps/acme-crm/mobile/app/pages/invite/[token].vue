@@ -29,7 +29,7 @@ async function accept() {
     await ws.load()
     ws.select(data as string)
     await notify.toast(`Welcome to ${invite.value?.org_name}`, 'success')
-    router.navigate('/', 'root', 'replace')
+    router.navigate('/app', 'root', 'replace')
   } catch (err) {
     await notify.error('Could not join', err)
   } finally {

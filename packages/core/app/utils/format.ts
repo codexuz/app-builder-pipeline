@@ -3,10 +3,14 @@ import type { FieldMeta } from '#core/utils/meta'
 
 export const humanize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')
 
-const money = () => new Intl.NumberFormat(app.locale, { style: 'currency', currency: app.currency })
 const number = () => new Intl.NumberFormat(app.locale)
 
-export const formatMoney = (v: number) => money().format(v)
+// Whole amounts drop the decimals: 350,000 rather than 350,000.00.
+export const formatMoney = (v: number) => new Intl.NumberFormat(app.locale, {
+  style: 'currency',
+  currency: app.currency,
+  ...(Number.isInteger(v) ? { maximumFractionDigits: 0 } : {})
+}).format(v)
 
 export function formatDate(v: string) {
   // Plain dates are calendar days; parse them as local dates so they never shift across timezones.
@@ -44,6 +48,8 @@ export function formatValue(f: FieldMeta, v: unknown): string {
     default: return String(v)
   }
 }
+
+export const PAYMENT_LABELS: Record<string, string> = { cash: 'Cash on delivery' }
 
 export const optionItems = (f: FieldMeta) => (f.options ?? []).map(o => ({ label: humanize(o), value: o }))
 

@@ -75,9 +75,9 @@ function renamePackages(file: string, slug: string) {
 const commands: Record<string, () => Promise<void> | void> = {
   validate() {
     const spec = specOf(args[0] ?? join(productDirOf(undefined), SPEC_FILE))
-    console.log(`✓ ${spec.app.name}: ${spec.entities.length} entities, ${spec.app.tenancy} tenancy`)
+    console.log(`✓ ${spec.app.name}: ${spec.app.type} app, ${spec.entities.length} entities${spec.commerce ? ', shop checkout' : ''}${spec.site ? ', public site' : ''}`)
     for (const e of spec.entities) {
-      console.log(`  - ${e.name} (/${e.slug}) ${e.fields.length} fields, visibility ${e.visibility}`)
+      console.log(`  - ${e.name} (/${e.slug}) ${e.fields.length} fields, access ${e.access}${e.createdByFunction ? ' (created by checkout)' : ''}`)
     }
   },
 

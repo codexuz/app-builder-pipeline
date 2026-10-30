@@ -3,12 +3,13 @@ export const app = {
   "name": "Pocket Budget",
   "slug": "pocket-budget",
   "description": "Track accounts, spending and monthly budgets.",
-  "tenancy": "user",
+  "type": "personal",
   "color": "emerald",
   "appId": "com.pocketbudget.app",
   "currency": "USD",
   "locale": "en-US",
-  "publicProfiles": false
+  "publicProfiles": false,
+  "publicSite": false
 }
 
 export const entities = [
@@ -25,6 +26,9 @@ export const entities = [
         "type": "text",
         "required": true,
         "unique": true,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -41,6 +45,9 @@ export const entities = [
           "credit",
           "cash"
         ],
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Kind",
         "list": true,
         "search": false
@@ -51,6 +58,9 @@ export const entities = [
         "required": false,
         "unique": false,
         "default": 0,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Opening balance",
         "list": true,
         "search": false
@@ -62,8 +72,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "team",
     "own": [],
-    "visibility": "org",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": false,
     "realtime": true,
     "sort": {
@@ -91,6 +104,9 @@ export const entities = [
         "type": "text",
         "required": true,
         "unique": true,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -105,6 +121,9 @@ export const entities = [
           "expense",
           "income"
         ],
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Kind",
         "list": true,
         "search": false
@@ -116,8 +135,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "team",
     "own": [],
-    "visibility": "org",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": false,
     "realtime": true,
     "sort": {
@@ -149,6 +171,9 @@ export const entities = [
         "type": "text",
         "required": true,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Description",
         "list": true,
         "search": true
@@ -159,6 +184,9 @@ export const entities = [
         "required": true,
         "unique": false,
         "min": 0,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Amount",
         "list": true,
         "search": false
@@ -173,6 +201,9 @@ export const entities = [
           "expense",
           "income"
         ],
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Kind",
         "list": true,
         "search": false
@@ -184,6 +215,9 @@ export const entities = [
         "required": true,
         "unique": false,
         "default": "now",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "list": true,
         "search": false
       },
@@ -193,6 +227,9 @@ export const entities = [
         "required": true,
         "unique": false,
         "to": "account",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Account",
         "list": true,
         "search": false,
@@ -205,6 +242,9 @@ export const entities = [
         "required": false,
         "unique": false,
         "to": "category",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Category",
         "list": true,
         "search": false,
@@ -216,6 +256,9 @@ export const entities = [
         "type": "tags",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Tags",
         "list": true,
         "search": false
@@ -225,6 +268,9 @@ export const entities = [
         "type": "longtext",
         "required": false,
         "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Notes",
         "list": false,
         "search": false
@@ -236,8 +282,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "team",
     "own": [],
-    "visibility": "org",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": true,
     "realtime": true,
     "sort": {
@@ -261,6 +310,9 @@ export const entities = [
         "required": true,
         "unique": false,
         "to": "category",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Category",
         "list": true,
         "search": false,
@@ -273,6 +325,9 @@ export const entities = [
         "required": true,
         "unique": false,
         "help": "Any day in the month",
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "label": "Month",
         "list": true,
         "search": false
@@ -284,6 +339,9 @@ export const entities = [
         "required": true,
         "unique": false,
         "min": 0,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
         "list": true,
         "search": false
       }
@@ -294,8 +352,11 @@ export const entities = [
       "update": "member",
       "delete": "admin"
     },
+    "access": "team",
     "own": [],
-    "visibility": "org",
+    "customerCan": [],
+    "publicRead": false,
+    "createdByFunction": false,
     "attachments": false,
     "realtime": true,
     "sort": {
@@ -347,6 +408,10 @@ export const dashboard = [
     "label": "Income vs expense"
   }
 ]
+
+export const commerce = null
+
+export const site = null
 
 export interface Account {
   id: string

@@ -1,0 +1,86 @@
+# Online shop (type business): one shop, its staff, customers who order, visitors who browse.
+# Visitors see bouquets and reviews; customers order (cash on delivery) and see only their own orders;
+# the contact form works without an account; staff manage everything in /app.
+app:
+  name: Bloom Flowers
+  slug: bloom-flowers
+  description: Fresh bouquets delivered across Tashkent the same day.
+  type: business
+  color: rose
+  appId: uz.bloom.flowers
+  currency: UZS
+  locale: en-US
+
+entities:
+  - name: category
+    plural: Categories
+    icon: i-lucide-tags
+    access: public
+    fields:
+      - { name: name, type: text, required: true, unique: true }
+      - { name: description, type: longtext }
+
+  - name: bouquet
+    icon: i-lucide-flower
+    access: public
+    attachments: true
+    sort: { field: name, dir: asc }
+    fields:
+      - { name: name, type: text, required: true }
+      - { name: price, type: money, required: true, min: 0 }
+      - { name: category_id, type: relation, to: category, label: Category }
+      - { name: size, type: enum, options: [small, medium, large], default: medium, required: true }
+      - { name: description, type: longtext }
+      - { name: stock, type: integer, required: true, default: 0, min: 0 }
+      - { name: available, type: boolean, default: true, help: Unavailable bouquets are hidden from the shop }
+
+  - name: review
+    icon: i-lucide-star
+    access: customer
+    publicRead: true
+    customerCan: [delete]
+    fields:
+      - { name: bouquet_id, type: relation, to: bouquet, required: true, cascade: true, label: Bouquet }
+      - { name: rating, type: integer, required: true, min: 1, max: 5 }
+      - { name: comment, type: longtext, required: true, max: 1000, list: true }
+
+  - name: inquiry
+    plural: Messages
+    icon: i-lucide-mail
+    access: inbox
+    title: name
+    fields:
+      - { name: name, type: text, required: true, max: 120 }
+      - { name: phone, type: phone, required: true }
+      - { name: message, type: longtext, required: true, max: 2000, list: true }
+      - { name: status, type: enum, options: [new, answered], default: new, required: true, staff: true }
+
+commerce:
+  product: bouquet
+  price: price
+  stock: stock
+  active: available
+  payments: [cash]
+  delivery: { fee: 30000, freeFrom: 500000 }
+  orderFields:
+    - { name: delivery_date, type: date, required: true }
+    - { name: delivery_time, type: enum, options: [morning, afternoon, evening], required: true }
+    - { name: recipient_name, type: text, label: Recipient }
+    - { name: card_message, type: longtext, label: Card message, max: 300 }
+
+site:
+  hero:
+    title: Fresh flowers, delivered today
+    subtitle: Hand-tied bouquets from Tashkent florists. Order before 14:00 for same-day delivery.
+    cta: { label: Shop bouquets, to: /bouquets }
+  sections:
+    - { type: entity, entity: bouquet, title: Popular bouquets, limit: 8 }
+    - { type: text, title: Same-day delivery, body: "Delivery is free from 500 000 UZS. We call before arriving and send a photo of your bouquet." }
+    - { type: entity, entity: review, title: What customers say, limit: 6 }
+    - { type: form, entity: inquiry, title: Questions? Write to us, description: We reply within an hour during opening times. }
+  contact:
+    phone: "+998 90 123 45 67"
+    telegram: bloomflowers
+    instagram: bloom.flowers.uz
+    address: Tashkent, Yunusabad
+    hours: Every day 8:00 to 21:00

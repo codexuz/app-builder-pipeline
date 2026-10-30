@@ -1,0 +1,7 @@
+{
+  "name": "@lumen-studio/shared",
+  "private": true,
+  "type": "module",
+  "description": "Generated schema for Lumen Studio, shared by its web and mobile apps.",
+  "main": "./schema.ts"
+}

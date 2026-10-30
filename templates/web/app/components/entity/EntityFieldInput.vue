@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { FieldMeta } from '#core/utils/meta'
 
-const props = defineProps<{ field: FieldMeta }>()
+// `site`: a customer or visitor filling this in, who has no workspace to search within.
+const props = defineProps<{ field: FieldMeta, site?: boolean }>()
 const model = defineModel<any>()
 
 const inputType = computed(() => ({ email: 'email', phone: 'tel', url: 'url', date: 'date', datetime: 'datetime-local' } as Record<string, string>)[props.field.type] ?? 'text')
@@ -32,7 +33,7 @@ const numberFormat = computed(() => props.field.type === 'integer'
     class="w-full"
   />
   <UInputTags v-else-if="field.type === 'tags'" v-model="model" placeholder="Type and press Enter" class="w-full" />
-  <EntityRelationSelect v-else-if="field.type === 'relation'" v-model="model" :to="field.to!" :required="field.required" />
+  <EntityRelationSelect v-else-if="field.type === 'relation'" v-model="model" :to="field.to!" :required="field.required" :site="site" />
   <EntityMemberSelect v-else-if="field.type === 'user'" v-model="model" :required="field.required" />
   <UInput v-else v-model="model" :type="inputType" class="w-full" :maxlength="field.max" />
 </template>

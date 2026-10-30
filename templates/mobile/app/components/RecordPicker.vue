@@ -3,7 +3,7 @@ import { app } from '#core/schema'
 import { entityByName, fieldOf, personName, recordTitle, titleSelectFor, type Profile } from '#core/utils/meta'
 
 // Picks a related record (`to` = entity name) or, without `to`, a person.
-const props = defineProps<{ label: string, to?: string, required?: boolean }>()
+const props = defineProps<{ label: string, to?: string, required?: boolean, site?: boolean }>()
 const model = defineModel<string | null | undefined>()
 
 const sb = useSupabase()
@@ -23,7 +23,7 @@ async function fetchOptions() {
     const term = clean(search.value)
     if (target) {
       let q = sb.from(target.name).select(titleSelectFor(target)).limit(30)
-      if (target.visibility !== 'public') q = q.eq('org_id', current.value!.id)
+      if (target.access !== 'members' && !props.site) q = q.eq('org_id', current.value!.id)
       const tf = fieldOf(target, target.title)
       if (term && tf && ['text', 'email', 'phone', 'longtext'].includes(tf.type)) q = q.ilike(target.title, `%${term}%`)
       q = tf && !tf.alias ? q.order(target.title) : q.order('created_at', { ascending: false })

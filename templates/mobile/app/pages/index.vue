@@ -1,112 +1,74 @@
 <script setup lang="ts">
 import type { RefresherCustomEvent } from '@ionic/vue'
-import { app, dashboard } from '#core/schema'
-import { entityByName, fieldOf, navEntities } from '#core/utils/meta'
+import { app, commerce, entities, site } from '#core/schema'
+import { entityByName, isPublicEntity, type SectionMeta } from '#core/utils/meta'
 
-const { current } = useWorkspace()
-const { user } = useAuth()
-const notify = useNotify()
-const stats = ref<Record<string, any> | null>(null)
-const recentList = ref<{ reload: () => Promise<void> | void }>()
-
-async function load() {
-  if (!current.value) return
-  const { data, error } = await useSupabase().rpc('dashboard_stats', { p_org: current.value.id })
-  if (error) await notify.error('Could not load the dashboard', error)
-  else stats.value = data as Record<string, any>
+const catalog = entityByName(commerce?.product ?? '') ?? entities.find(isPublicEntity)
+const hero = site?.hero ?? {
+  title: app.name,
+  subtitle: app.description,
+  cta: catalog ? { label: `Browse ${catalog.plural.toLowerCase()}`, to: `/${catalog.slug}` } : undefined
 }
-watch(() => current.value?.id, load, { immediate: true })
-onIonViewWillEnter(() => { if (stats.value) { load(); recentList.value?.reload() } })
+const sections: SectionMeta[] = site?.sections.length
+  ? site.sections
+  : catalog ? [{ type: 'entity', entity: catalog.name, limit: 8 }] : []
+const entityOf = (name: string) => entityByName(name)!
 
+const grids = new Map<number, { reload: () => Promise<void> }>()
 async function refresh(ev: RefresherCustomEvent) {
-  await Promise.all([load(), recentList.value?.reload()])
+  await Promise.all([...grids.values()].map(g => g.reload()))
   await ev.target.complete()
 }
-
-type Card = (typeof dashboard)[number]
-const cards = dashboard.map((c, i) => ({ c, i, e: entityByName(c.entity)! }))
-const tiles = cards.filter(t => t.c.type !== 'breakdown')
-const breakdowns = cards.filter(t => t.c.type === 'breakdown')
-const recent = navEntities()[0]
-
-function tileValue(c: Card, i: number) {
-  const v = Number(stats.value?.[`c${i}`] ?? 0)
-  if (c.type === 'sum' && fieldOf(entityByName(c.entity)!, c.field)?.type === 'money') return formatMoney(v)
-  return new Intl.NumberFormat(app.locale).format(v)
-}
-
-function breakdownRows(c: Card, i: number) {
-  if (c.type !== 'breakdown') return []
-  const counts = (stats.value?.[`c${i}`] ?? {}) as Record<string, number>
-  const f = fieldOf(entityByName(c.entity)!, c.field)!
-  const keys = f.type === 'boolean' ? ['true', 'false'] : f.options ?? []
-  const total = Object.values(counts).reduce((a, b) => a + b, 0)
-  return keys.map(k => ({
-    key: k,
-    label: f.type === 'boolean' ? (k === 'true' ? 'Yes' : 'No') : humanize(k),
-    count: counts[k] ?? 0,
-    ratio: total ? (counts[k] ?? 0) / total : 0
-  }))
-}
-
-const firstName = computed(() => user.value?.user_metadata?.full_name?.split(' ')[0])
+const contact: NonNullable<typeof site>['contact'] = site?.contact ?? {}
 </script>
 
 <template>
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-buttons slot="start">
-          <ion-menu-button />
-        </ion-buttons>
-        <ion-title>{{ current?.personal ? app.name : current?.name }}</ion-title>
+        <ion-buttons slot="start"><ion-menu-button /></ion-buttons>
+        <ion-title>{{ app.name }}</ion-title>
+        <ion-buttons slot="end"><CartButton /></ion-buttons>
       </ion-toolbar>
     </ion-header>
-
     <ion-content>
       <ion-refresher slot="fixed" @ion-refresh="refresh">
         <ion-refresher-content />
       </ion-refresher>
 
-      <div class="ion-padding-horizontal ion-padding-top">
-        <h1 style="margin: 0; font-size: 22px">Hi{{ firstName ? `, ${firstName}` : '' }}</h1>
-        <p class="muted" style="margin-top: 4px">{{ app.description }}</p>
+      <div class="ion-padding">
+        <h1 style="margin: 0; font-size: 26px; line-height: 1.2">{{ hero.title }}</h1>
+        <p v-if="hero.subtitle" class="muted">{{ hero.subtitle }}</p>
+        <ion-button v-if="hero.cta" :router-link="hero.cta.to">{{ hero.cta.label }}</ion-button>
       </div>
 
-      <div class="stat-grid">
-        <ion-card v-for="{ c, i, e } in tiles" :key="i" class="stat-card" button :router-link="`/${e.slug}`">
-          <ion-card-header>
-            <ion-card-subtitle>{{ c.label ?? e.plural }}</ion-card-subtitle>
-            <div class="stat-value">
-              <ion-skeleton-text v-if="!stats" animated style="width: 60%; height: 22px" />
-              <template v-else>{{ tileValue(c, i) }}</template>
-            </div>
-          </ion-card-header>
-        </ion-card>
-      </div>
-
-      <ion-card v-for="{ c, i, e } in breakdowns" :key="i">
-        <ion-card-header>
-          <ion-card-title style="font-size: 16px">{{ c.label ?? `${e.plural} by ${fieldOf(e, (c as any).field)?.label.toLowerCase()}` }}</ion-card-title>
-        </ion-card-header>
-        <ion-card-content>
-          <div v-for="r in breakdownRows(c, i)" :key="r.key" style="margin-bottom: 10px">
-            <div style="display: flex; justify-content: space-between; font-size: 14px">
-              <span>{{ r.label }}</span>
-              <span class="muted tabular">{{ r.count }}</span>
-            </div>
-            <ion-progress-bar :value="r.ratio" />
-          </div>
-        </ion-card-content>
-      </ion-card>
-
-      <template v-if="recent">
-        <ion-list-header>
-          <ion-label>Recent {{ recent.plural.toLowerCase() }}</ion-label>
-          <ion-button :router-link="`/${recent.slug}`">See all</ion-button>
-        </ion-list-header>
-        <RecordList ref="recentList" :entity="recent" :scope="recent.visibility === 'public' ? 'all' : 'workspace'" :page-size="5" :infinite="false" />
+      <template v-for="(s, i) in sections" :key="i">
+        <section v-if="s.type === 'entity'">
+          <ion-list-header>
+            <ion-label>{{ s.title ?? entityOf(s.entity).plural }}</ion-label>
+            <ion-button v-if="entityOf(s.entity).access === 'public'" :router-link="`/${entityOf(s.entity).slug}`">See all</ion-button>
+          </ion-list-header>
+          <CatalogGrid :ref="el => { if (el) grids.set(i, el as any) }" :entity="entityOf(s.entity)" :page-size="s.limit" />
+        </section>
+        <section v-else-if="s.type === 'text'" class="ion-padding">
+          <h2 style="margin-top: 0; font-size: 18px">{{ s.title }}</h2>
+          <p class="muted">{{ s.body }}</p>
+        </section>
+        <section v-else class="ion-padding-vertical">
+          <ion-list-header><ion-label>{{ s.title ?? entityOf(s.entity).label }}</ion-label></ion-list-header>
+          <p v-if="s.description" class="ion-padding-horizontal muted">{{ s.description }}</p>
+          <PublicForm :entity="entityOf(s.entity)" login-path="/login" />
+        </section>
       </template>
+
+      <ion-list v-if="Object.keys(contact).length" lines="none">
+        <ion-list-header><ion-label>Contact</ion-label></ion-list-header>
+        <ion-item v-if="contact.phone" :href="`tel:${contact.phone.replace(/\s/g, '')}`"><ion-label>{{ contact.phone }}</ion-label></ion-item>
+        <ion-item v-if="contact.email" :href="`mailto:${contact.email}`"><ion-label>{{ contact.email }}</ion-label></ion-item>
+        <ion-item v-if="contact.telegram" :href="`https://t.me/${contact.telegram}`" target="_blank"><ion-label>Telegram</ion-label></ion-item>
+        <ion-item v-if="contact.address"><ion-label class="ion-text-wrap">{{ contact.address }}</ion-label></ion-item>
+        <ion-item v-if="contact.hours"><ion-label class="ion-text-wrap">{{ contact.hours }}</ion-label></ion-item>
+      </ion-list>
     </ion-content>
   </ion-page>
 </template>

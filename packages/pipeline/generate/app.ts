@@ -36,8 +36,11 @@ function entityMeta(e: Entity) {
     description: e.description,
     fields: e.fields.map(({ cascade: _c, ...f }) => f),
     permissions: e.permissions,
+    access: e.access,
     own: e.own,
-    visibility: e.visibility,
+    customerCan: e.customerCan,
+    publicRead: e.publicRead,
+    createdByFunction: e.createdByFunction,
     attachments: e.attachments,
     realtime: e.realtime,
     sort: e.sort,
@@ -55,6 +58,10 @@ export const app = ${json(spec.app)}
 export const entities = ${json(spec.entities.map(entityMeta))}
 
 export const dashboard = ${json(spec.dashboard)}
+
+export const commerce = ${json(spec.commerce ?? null)}
+
+export const site = ${json(spec.site ?? null)}
 
 ${spec.entities.map(rowInterface).join('\n\n')}
 `

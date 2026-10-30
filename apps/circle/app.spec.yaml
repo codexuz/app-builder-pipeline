@@ -1,10 +1,10 @@
-# Social app (user tenancy + public content): everyone owns their own posts and comments,
+# Community app (type personal + access members): everyone owns their own posts and comments,
 # every signed-in user reads them. Bookmarks stay private.
 app:
   name: Circle
   slug: circle
   description: A small community to share posts, comment and follow people.
-  tenancy: user
+  type: personal
   color: violet
   appId: com.circle.social
 
@@ -12,7 +12,7 @@ entities:
   - name: post
     icon: i-lucide-message-square-text
     title: headline
-    visibility: public
+    access: members
     attachments: true
     fields:
       - { name: headline, type: text, required: true, max: 140 }
@@ -24,7 +24,7 @@ entities:
   - name: comment
     icon: i-lucide-messages-square
     title: body
-    visibility: public
+    access: members
     nav: false
     fields:
       - { name: post_id, type: relation, to: post, required: true, cascade: true }
@@ -33,7 +33,7 @@ entities:
   - name: follow
     icon: i-lucide-user-plus
     title: following_id
-    visibility: public
+    access: members
     fields:
       - { name: following_id, type: user, label: Following, required: true, unique: true }
 

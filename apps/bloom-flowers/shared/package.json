@@ -1,0 +1,7 @@
+{
+  "name": "@bloom-flowers/shared",
+  "private": true,
+  "type": "module",
+  "description": "Generated schema for Bloom Flowers, shared by its web and mobile apps.",
+  "main": "./schema.ts"
+}

@@ -83,6 +83,26 @@ exception when others then
   return null;
 end $$;
 
+-- The app type (team, personal, business, marketplace); the generated migration replaces this.
+create or replace function public.app_type()
+returns text language sql stable as $$ select 'team'::text $$;
+
+-- business apps: the one workspace that owns the catalog and receives orders and messages.
+create or replace function public.business_org()
+returns uuid language sql stable security definer set search_path = '' as $$
+  select id from public.organizations where public.app_type() = 'business' order by created_at limit 1
+$$;
+
+-- Workspaces that accept customer records and messages from people outside them.
+create or replace function public.accepts_customers(p_org uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select case public.app_type()
+    when 'business' then p_org = public.business_org()
+    when 'marketplace' then exists (select 1 from public.organizations where id = p_org and not personal)
+    else false
+  end
+$$;
+
 -- ---------------------------------------------------------------------------
 -- Shared triggers
 -- ---------------------------------------------------------------------------
@@ -187,6 +207,10 @@ begin
   if auth.uid() is null then
     raise exception 'Not signed in' using errcode = '42501';
   end if;
+  -- A business app has exactly one workspace; everyone who signs up later is a customer.
+  if public.app_type() = 'business' and exists (select 1 from public.organizations) then
+    raise exception 'This app already has its business workspace. Ask the owner for an invite.' using errcode = '42501';
+  end if;
   insert into public.organizations (name, personal, created_by)
   values (trim(p_name), p_personal, auth.uid()) returning id into v_org;
   insert into public.memberships (org_id, user_id, role) values (v_org, auth.uid(), 'owner');
@@ -230,6 +254,7 @@ revoke execute on function public.create_organization(text, boolean) from public
 revoke execute on function public.accept_invitation(text) from public, anon;
 grant execute on function public.create_organization(text, boolean) to authenticated;
 grant execute on function public.accept_invitation(text) to authenticated;
+grant execute on function public.business_org() to anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- Row level security
@@ -276,10 +301,18 @@ create policy audit_log_select on public.audit_log for select to authenticated
 
 -- ---------------------------------------------------------------------------
 -- File storage: objects live under <org_id>/<table>/<record_id>/<file>.
+-- attachments: private files. public-media: images of public records (products, services), served by URL.
 -- ---------------------------------------------------------------------------
 insert into storage.buckets (id, name, public, file_size_limit)
-values ('attachments', 'attachments', false, 26214400)
+values ('attachments', 'attachments', false, 26214400), ('public-media', 'public-media', true, 10485760)
 on conflict (id) do nothing;
+
+create policy public_media_select on storage.objects for select to anon, authenticated
+  using (bucket_id = 'public-media');
+create policy public_media_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'public-media' and public.has_org_role(public.try_uuid((storage.foldername(name))[1]), 'member'));
+create policy public_media_delete on storage.objects for delete to authenticated
+  using (bucket_id = 'public-media' and public.has_org_role(public.try_uuid((storage.foldername(name))[1]), 'member'));
 
 create policy attachments_select on storage.objects for select to authenticated
   using (bucket_id = 'attachments' and public.has_org_role(public.try_uuid((storage.foldername(name))[1]), 'viewer'));

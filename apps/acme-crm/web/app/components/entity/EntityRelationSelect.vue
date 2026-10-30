@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { entityByName, fieldOf, recordTitle, titleSelectFor } from '#core/utils/meta'
 
-const props = defineProps<{ to: string, required?: boolean }>()
+const props = defineProps<{ to: string, required?: boolean, site?: boolean }>()
 const model = defineModel<string | null | undefined>()
 
 const target = entityByName(props.to)!
@@ -17,7 +17,7 @@ async function load() {
   loading.value = true
   try {
     let q = sb.from(target.name).select(titleSelectFor(target)).limit(25)
-    if (target.visibility !== 'public') q = q.eq('org_id', current.value!.id)
+    if (target.access !== 'members' && !props.site) q = q.eq('org_id', current.value!.id)
     const term = search.value.replace(/[,()%*\\]/g, ' ').trim()
     if (term && titleField && ['text', 'email', 'phone', 'longtext'].includes(titleField.type)) q = q.ilike(target.title, `%${term}%`)
     q = titleField && !titleField.alias ? q.order(target.title) : q.order('created_at', { ascending: false })

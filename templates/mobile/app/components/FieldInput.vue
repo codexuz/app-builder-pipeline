@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { FieldMeta } from '#core/utils/meta'
 
-const props = defineProps<{ field: FieldMeta, error?: string }>()
+// `site`: a customer or visitor filling this in, who has no workspace to search within.
+const props = defineProps<{ field: FieldMeta, error?: string, site?: boolean }>()
 const model = defineModel<any>()
 
 const label = computed(() => props.field.label + (props.field.required ? ' *' : ''))
@@ -63,7 +64,7 @@ const removeTag = (t: string) => { model.value = (model.value ?? []).filter((x: 
         </ion-chip>
       </div>
     </template>
-    <RecordPicker v-else-if="field.type === 'relation'" v-model="model" :label="field.label" :to="field.to" :required="field.required" />
+    <RecordPicker v-else-if="field.type === 'relation'" v-model="model" :label="field.label" :to="field.to" :required="field.required" :site="site" />
     <RecordPicker v-else-if="field.type === 'user'" v-model="model" :label="field.label" :required="field.required" />
     <ion-item v-else>
       <ion-input v-model="model" :label="label" label-placement="stacked" :type="inputType" :maxlength="field.max" />

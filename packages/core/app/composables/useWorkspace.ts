@@ -40,7 +40,7 @@ export function useWorkspace() {
     return data as string
   }
 
-  // User-tenancy accounts get their workspace from the sign-up trigger; this covers accounts created before it existed.
+  // Personal apps create the workspace at sign-up; this covers accounts created before the app existed.
   async function ensurePersonal() {
     if (!list.value.length) await create('Personal', true)
   }

@@ -9,7 +9,8 @@ const records = useRecords(props.entity)
 const toast = useToast()
 const saving = ref(false)
 
-const schema = formSchema(props.entity)
+const fields = editableFields(props.entity, true)
+const schema = formSchema(props.entity, fields)
 const state = reactive<Record<string, any>>(
   props.record ? rowToFormState(props.entity, props.record) : newFormState(props.entity, user.value?.id, props.preset)
 )
@@ -18,7 +19,7 @@ const wide = (type: string) => ['longtext', 'json', 'tags'].includes(type)
 async function onSubmit() {
   saving.value = true
   try {
-    const payload = formStateToPayload(props.entity, state)
+    const payload = formStateToPayload(props.entity, state, fields)
     const row = props.record ? await records.update(props.record.id, payload) : await records.create(payload)
     toast.add({ title: `${props.entity.label} ${props.record ? 'updated' : 'created'}`, color: 'success', icon: 'i-lucide-check' })
     emit('saved', row)
@@ -34,7 +35,7 @@ async function onSubmit() {
   <UForm :schema="schema" :state="state" class="space-y-6" @submit="onSubmit">
     <div class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
       <UFormField
-        v-for="f in entity.fields"
+        v-for="f in fields"
         :key="f.name"
         :name="f.name"
         :label="f.label"
