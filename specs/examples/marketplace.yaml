@@ -5,9 +5,48 @@ app:
   slug: bozor-market
   description: Thousands of products from local sellers, delivered to your door.
   type: marketplace
+  style: market
   color: violet
   appId: uz.bozor.market
   currency: UZS
+
+translations:
+  uz:
+    Products: Mahsulotlar
+    Questions: Savollar
+    Electronics: Elektronika
+    Clothing: Kiyim
+    Shoes: Poyabzal
+    Home: Uy-roʻzgʻor
+    Beauty: Goʻzallik
+    Kids: Bolalar uchun
+    Food: Oziq-ovqat
+    Books: Kitoblar
+    Sports: Sport
+    New arrivals: Yangi mahsulotlar
+    Everything you need, from sellers near you: Kerakli hamma narsa, yaqin sotuvchilardan
+    Free delivery from 200 000 UZS. Pay in cash when it arrives.: 200 000 soʻmdan bepul yetkazib berish. Qabul qilganda naqd toʻlang.
+    Browse products: Mahsulotlarni koʻrish
+    Sell on Bozor: Bozorda soting
+    "Open your shop in two minutes: sign in, choose Sell on Bozor, add products. Orders arrive in your seller dashboard.": "Doʻkoningizni ikki daqiqada oching: kiring, Bozorda sotishni tanlang, mahsulot qoʻshing. Buyurtmalar sotuvchi panelingizga keladi."
+  ru:
+    Products: Товары
+    Questions: Вопросы
+    Electronics: Электроника
+    Clothing: Одежда
+    Shoes: Обувь
+    Home: Для дома
+    Beauty: Красота
+    Kids: Детям
+    Food: Продукты
+    Books: Книги
+    Sports: Спорт
+    New arrivals: Новинки
+    Everything you need, from sellers near you: Всё нужное от продавцов рядом с вами
+    Free delivery from 200 000 UZS. Pay in cash when it arrives.: Бесплатная доставка от 200 000 сумов. Оплата наличными при получении.
+    Browse products: Смотреть товары
+    Sell on Bozor: Продавайте на Bozor
+    "Open your shop in two minutes: sign in, choose Sell on Bozor, add products. Orders arrive in your seller dashboard.": "Откройте магазин за две минуты: войдите, выберите продажу на Bozor, добавьте товары. Заказы придут в ваш кабинет продавца."
 
 entities:
   - name: product
@@ -49,7 +88,9 @@ commerce:
   price: price
   stock: stock
   active: active
-  payments: [cash]
+  payments: [cash, click, payme]
+  variants: true
+  variantLabel: Size
   delivery: { fee: 15000, freeFrom: 200000 }
 
 site:

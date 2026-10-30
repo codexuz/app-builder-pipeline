@@ -4,10 +4,15 @@ export const app = {
   "slug": "lumen-studio",
   "description": "Hair, nails and skin care in the centre of Samarkand.",
   "type": "business",
+  "style": "studio",
   "color": "teal",
   "appId": "uz.lumen.studio",
   "currency": "UZS",
-  "locale": "en-US",
+  "languages": [
+    "uz",
+    "ru",
+    "en"
+  ],
   "publicProfiles": false,
   "publicSite": true
 }
@@ -29,6 +34,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -48,6 +54,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Category",
         "list": true,
         "search": false
@@ -62,6 +69,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false
       },
@@ -77,6 +85,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false
       },
@@ -88,23 +97,26 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Description",
         "list": false,
         "search": false
       },
       {
-        "name": "cover_url",
-        "type": "url",
-        "label": "Cover image",
         "required": false,
         "unique": false,
         "list": false,
         "staff": true,
         "readonly": false,
         "auto": true,
+        "translate": false,
+        "name": "cover_url",
+        "type": "url",
+        "label": "Cover image",
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -146,6 +158,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -159,6 +172,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Role",
         "list": true,
         "search": true
@@ -172,23 +186,26 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Bio",
         "list": false,
         "search": false
       },
       {
-        "name": "cover_url",
-        "type": "url",
-        "label": "Cover image",
         "required": false,
         "unique": false,
         "list": false,
         "staff": true,
         "readonly": false,
         "auto": true,
+        "translate": false,
+        "name": "cover_url",
+        "type": "url",
+        "label": "Cover image",
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -232,6 +249,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false,
         "alias": "service",
@@ -248,43 +266,22 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false,
         "alias": "specialist",
         "fk": "booking_specialist_id_fkey"
       },
       {
-        "name": "date",
-        "type": "date",
-        "required": true,
-        "unique": false,
-        "staff": false,
-        "readonly": false,
-        "auto": false,
-        "label": "Date",
-        "list": true,
-        "search": false
-      },
-      {
-        "name": "time",
-        "type": "enum",
-        "required": true,
-        "unique": false,
-        "options": [
-          "09:00",
-          "10:00",
-          "11:00",
-          "12:00",
-          "14:00",
-          "15:00",
-          "16:00",
-          "17:00",
-          "18:00"
-        ],
-        "staff": false,
-        "readonly": false,
-        "auto": false,
+        "name": "starts_at",
+        "type": "datetime",
         "label": "Time",
+        "required": true,
+        "unique": false,
+        "staff": false,
+        "readonly": false,
+        "auto": false,
+        "translate": false,
         "list": true,
         "search": false
       },
@@ -296,6 +293,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Phone",
         "list": true,
         "search": true
@@ -309,6 +307,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Note",
         "list": false,
         "search": false
@@ -328,11 +327,26 @@ export const entities = [
         "staff": true,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Status",
         "list": true,
         "search": false
+      },
+      {
+        "required": false,
+        "unique": false,
+        "list": false,
+        "staff": false,
+        "readonly": true,
+        "auto": true,
+        "translate": false,
+        "name": "ends_at",
+        "type": "datetime",
+        "label": "Ends",
+        "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -349,7 +363,7 @@ export const entities = [
     "attachments": false,
     "realtime": true,
     "sort": {
-      "field": "date",
+      "field": "starts_at",
       "dir": "asc"
     },
     "nav": true,
@@ -373,6 +387,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Rating",
         "list": true,
         "search": false
@@ -387,10 +402,12 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Text",
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -431,6 +448,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -443,6 +461,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Phone",
         "list": true,
         "search": true
@@ -457,6 +476,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Message",
         "search": false
       },
@@ -473,11 +493,13 @@ export const entities = [
         "staff": true,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Status",
         "list": true,
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -538,6 +560,26 @@ export const dashboard = [
 
 export const commerce = null
 
+export const scheduling = {
+  "entity": "booking",
+  "start": "starts_at",
+  "service": "service_id",
+  "duration": "duration_minutes",
+  "length": 60,
+  "resource": "specialist_id",
+  "status": "status",
+  "inactive": [
+    "cancelled"
+  ],
+  "open": "09:00",
+  "close": "19:00",
+  "step": 30,
+  "closedDays": [
+    "mon"
+  ],
+  "timezone": "Asia/Tashkent"
+}
+
 export const site = {
   "hero": {
     "title": "Take an hour for yourself",
@@ -580,6 +622,49 @@ export const site = {
   }
 }
 
+export const translations = {
+  "uz": {
+    "Services": "Xizmatlar",
+    "Specialists": "Mutaxassislar",
+    "Specialist": "Mutaxassis",
+    "Bookings": "Yozuvlar",
+    "Booking": "Yozilish",
+    "Testimonials": "Fikrlar",
+    "Reviews": "Fikrlar",
+    "Our team": "Jamoamiz",
+    "Service": "Xizmat",
+    "Hair": "Soch",
+    "Nails": "Tirnoq",
+    "Skin": "Teri",
+    "Makeup": "Pardoz",
+    "Take an hour for yourself": "Oʻzingizga bir soat ajrating",
+    "Book a haircut, manicure or facial in a few taps. We confirm by phone within 15 minutes.": "Soch, manikyur yoki yuz parvarishiga bir necha bosishda yoziling. 15 daqiqa ichida telefon orqali tasdiqlaymiz.",
+    "Book a visit": "Yozilish",
+    "Ask us anything": "Savolingizni yozing",
+    "Leave empty for the first free specialist": "Birinchi boʻsh mutaxassis uchun boʻsh qoldiring"
+  },
+  "ru": {
+    "Services": "Услуги",
+    "Specialists": "Мастера",
+    "Specialist": "Мастер",
+    "Bookings": "Записи",
+    "Booking": "Запись",
+    "Testimonials": "Отзывы",
+    "Reviews": "Отзывы",
+    "Our team": "Наша команда",
+    "Service": "Услуга",
+    "Hair": "Волосы",
+    "Nails": "Ногти",
+    "Skin": "Кожа",
+    "Makeup": "Макияж",
+    "Take an hour for yourself": "Найдите час для себя",
+    "Book a haircut, manicure or facial in a few taps. We confirm by phone within 15 minutes.": "Запишитесь на стрижку, маникюр или уход за лицом в пару нажатий. Подтвердим по телефону за 15 минут.",
+    "Book a visit": "Записаться",
+    "Ask us anything": "Задайте вопрос",
+    "Leave empty for the first free specialist": "Оставьте пустым для первого свободного мастера"
+  }
+}
+
 export interface Service {
   id: string
   org_id: string
@@ -611,11 +696,11 @@ export interface Booking {
   org_id: string
   service_id: string
   specialist_id: string | null
-  date: string
-  time: string
+  starts_at: string
   phone: string
   note: string | null
   status: string
+  ends_at: string | null
   created_by: string | null
   created_at: string
   updated_at: string

@@ -51,6 +51,15 @@ export async function verifyDb(spec: NormalizedSpec, migrations: { name: string,
       }
       return fn(tx)
     })
+  const asVisitorFrom = (address: string, fn: (tx: Transaction) => Promise<unknown>) => db.transaction(async (tx) => {
+    await tx.query(`select set_config('request.headers', $1, true)`, [JSON.stringify({ 'x-forwarded-for': address })])
+    await tx.exec('set local role anon')
+    return fn(tx)
+  })
+  const asService = <T>(fn: (tx: Transaction) => Promise<T>) => db.transaction(async (tx) => {
+    await tx.exec('set local role service_role')
+    return fn(tx)
+  })
   const fails = async (user: User, fn: (tx: Transaction) => Promise<unknown>) => {
     try { await as(user, fn); return false } catch { return true }
   }
@@ -133,7 +142,9 @@ export async function verifyDb(spec: NormalizedSpec, migrations: { name: string,
     const row: Record<string, unknown> = { org_id: org }
     for (const f of e.fields) {
       if (f.auto || f.readonly) continue
-      const v = sampleValue(f, n, who === ANON ? ownerOf[org]!.id : who.id, f.type === 'relation' ? samples[org]![f.to!] : undefined)
+      const v = spec.scheduling?.entity === e.name && f.name === spec.scheduling.start
+        ? slotOn(n)
+        : sampleValue(f, n, who === ANON ? ownerOf[org]!.id : who.id, f.type === 'relation' ? samples[org]![f.to!] : undefined)
       if (v !== undefined && !(f.type === 'user' && (who === ANON || e.access === 'customer'))) row[f.name] = v
     }
     return row
@@ -274,11 +285,15 @@ export async function verifyDb(spec: NormalizedSpec, migrations: { name: string,
   }
 
   if (spec.commerce) await verifyCommerce()
+  if (spec.scheduling) await verifyScheduling()
+  for (const e of spec.entities.filter(x => x.access === 'inbox')) await verifySpamLimit(e)
 
   try {
     const stats = await as(alice, async tx => (await tx.query<{ s: Record<string, unknown> }>(`select public.dashboard_stats($1) as s`, [orgA])).rows[0]!.s)
     check('dashboard_stats returns every card', spec.dashboard.every((_, i) => `c${i}` in stats), JSON.stringify(stats))
-    const leak = await as(bob, async tx => (await tx.query<{ s: Record<string, unknown> }>(`select public.dashboard_stats($1) as s`, [orgA])).rows[0]!.s)
+    // A newcomer with no records of their own sees zeros; RLS applies inside the function.
+    const stranger = await signUp('stranger')
+    const leak = await as(stranger, async tx => (await tx.query<{ s: Record<string, unknown> }>(`select public.dashboard_stats($1) as s`, [orgA])).rows[0]!.s)
     const nonzero = spec.dashboard.some((c, i) => {
       const v = leak[`c${i}`]
       const ent = byName.get(c.entity)!
@@ -293,6 +308,78 @@ export async function verifyDb(spec: NormalizedSpec, migrations: { name: string,
   await db.close()
   return results
 
+  function slotOn(n: number) {
+    return slotOnDay(spec.scheduling!, n)
+  }
+
+  async function verifySpamLimit(e: Entity) {
+    const send = (address: string) => asVisitorFrom(address, tx => insertBlind(tx, e, sampleRow(e, orgA, 8, ANON)))
+    let blocked = false
+    for (let i = 0; i < 6; i++) {
+      try { await send('203.0.113.7') } catch { blocked = i === 5 }
+    }
+    check(`${e.name}: one sender cannot flood the form`, blocked, 'a sixth message went through')
+    let otherOk = true
+    try { await send('203.0.113.8') } catch { otherOk = false }
+    check(`${e.name}: other senders are not affected`, otherOk, 'another sender was blocked')
+    const { rows } = await db.query<{ sender: string }>(`select sender from public.submission_log limit 1`)
+    check('spam log stores no raw addresses', !rows[0]?.sender.includes('.'), rows[0]?.sender ?? '')
+    check('apps cannot read the spam log', await fails(alice, tx => tx.query(`select 1 from public.submission_log`).then((r) => { if (!r.rows.length) throw new Error('empty') })), 'spam log readable')
+  }
+
+  async function verifyScheduling() {
+    const s = spec.scheduling!
+    const e = byName.get(s.entity)!
+    const t = `public.${e.name}`
+    const res = s.resource ? e.fields.find(f => f.name === s.resource)! : undefined
+    const row = (start: string, extra: Record<string, unknown> = {}) => ({ ...sampleRow(e, orgA, 1, customer!), [s.start]: start, ...extra })
+    const book = (u: User, start: string, extra: Record<string, unknown> = {}) => as(u, async tx => (await insert(tx, e, row(start, extra))).rows[0]!.id)
+    const refuses = (u: User, start: string, extra: Record<string, unknown> = {}) => fails(u, tx => insert(tx, e, row(start, extra)))
+    const who = res ? { [res.name]: samples[orgA]![res.to!] } : {}
+    const noon = (n: number, time: string) => slotOnDay(s, n, time)
+    // Long enough that the next slot overlaps it.
+    if (s.service) {
+      const svc = e.fields.find(f => f.name === s.service)!
+      await db.query(`update public.${svc.to} set ${s.duration} = $1`, [s.step * 2])
+    }
+    const first = noon(10, s.open)
+    const firstId = await book(customer!, first, who)
+    check('booking: a free slot can be booked', Boolean(firstId), 'booking failed')
+    const { rows } = await db.query<{ ends_at: string }>(`select ends_at from ${t} where id = $1`, [firstId])
+    check('booking: the end time is computed by the database', Boolean(rows[0]?.ends_at), 'no end time')
+    check('booking: the same slot cannot be taken twice', await refuses(otherCustomer!, first, who), 'double booked')
+    const [h, m] = s.open.split(':').map(Number) as [number, number]
+    const overlapping = `${String(h).padStart(2, '0')}:${String(m + s.step).padStart(2, '0')}`
+    check('booking: overlapping slots are refused', await refuses(otherCustomer!, noon(10, overlapping), who), 'overlap accepted')
+    check('booking: times before opening are refused', await refuses(customer!, noon(11, '02:00'), who), 'booked at night')
+    check('booking: times in the past are refused', await refuses(customer!, '2020-01-07T10:00:00+05:00', who), 'booked in the past')
+    if (s.closedDays.length) {
+      const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+      const d = new Date(Date.now() + 864e5)
+      while (!s.closedDays.includes(days[d.getUTCDay()] as never)) d.setUTCDate(d.getUTCDate() + 1)
+      check('booking: closed days are refused', await refuses(customer!, `${d.toISOString().slice(0, 10)}T${s.open}:00+05:00`, who), 'booked on a closed day')
+    }
+    const slotArgs = (day: string) => [orgA, day, ...(s.service ? [samples[orgA]![s.service.replace(/_id$/, '')] ?? row(first)[s.service]] : [])]
+    const free = async (u: User, day: string) => as(u, async tx => (await tx.query<{ s: string }>(
+      `select public.free_slots($1::uuid, $2::date${s.service ? ', $3::uuid' : ''}) as s`, slotArgs(day))).rows.map(r => new Date(r.s).getTime()))
+    const day = first.slice(0, 10)
+    const before = await free(ANON, day)
+    check('booking: visitors can see free slots', before.length > 0, 'no slots')
+    if (res) {
+      const onlyOne = (await db.query(`select 1 from public.${res.to} where org_id = $1`, [orgA])).rows.length === 1
+      if (onlyOne) check('booking: booked slots disappear from the free list', !before.includes(new Date(first).getTime()), 'booked slot still free')
+      const auto = await book(otherCustomer!, noon(12, s.open))
+      const { rows: picked } = await db.query<Record<string, string>>(`select ${res.name} as r from ${t} where id = $1`, [auto])
+      check('booking: "first free" assigns someone', Boolean(picked[0]?.r), 'no one assigned')
+    }
+    if (s.status) {
+      await as(alice, tx => tx.query(`update ${t} set ${s.status} = $1 where id = $2`, [s.inactive[0], firstId]))
+      let rebooked = true
+      try { await book(otherCustomer!, first, who) } catch { rebooked = false }
+      check('booking: cancelling frees the slot', rebooked, 'slot stayed taken')
+    }
+  }
+
   async function verifyCommerce() {
     const c = spec.commerce!
     const product = byName.get(c.product)!
@@ -301,6 +388,13 @@ export async function verifyDb(spec: NormalizedSpec, migrations: { name: string,
     if (!prodA || !customer) return check('checkout: sample product exists', false, 'no product to order')
     const price = Number((await db.query<{ p: string }>(`select ${c.price} as p from ${pt} where id = $1`, [prodA])).rows[0]!.p)
     if (c.stock) await db.query(`update ${pt} set ${c.stock} = 5 where id = $1`, [prodA])
+    const variant = c.variants ? samples[orgA]!.shop_variant : undefined
+    if (variant) await db.query(`update public.shop_variant set stock = 5, price = 250 where id = $1`, [variant])
+    const unit = variant ? 250 : price
+    const line = (quantity: number, extra: Record<string, unknown> = {}) => ({ product_id: prodA, quantity, ...(variant ? { variant_id: variant } : {}), ...extra })
+    const stockNow = async () => Number((variant
+      ? await db.query<{ s: number }>(`select stock as s from public.shop_variant where id = $1`, [variant])
+      : await db.query<{ s: number }>(`select ${c.stock} as s from ${pt} where id = $1`, [prodA])).rows[0]!.s)
     const details: Record<string, unknown> = { customer_name: 'Carol', phone: '+998 90 000 00 00', address: '1 Main St' }
     for (const f of c.orderFields) {
       const v = sampleValue({ ...f, label: f.label ?? f.name, list: true, search: false } as Field, 1, '', undefined)
@@ -310,28 +404,28 @@ export async function verifyDb(spec: NormalizedSpec, migrations: { name: string,
       (await tx.query<{ ids: string[] }>(`select public.place_order($1::jsonb, $2::jsonb) as ids`, [JSON.stringify(items), JSON.stringify(d)])).rows[0]!.ids)
 
     check('checkout: visitors must sign in to order', await fails(ANON, tx => tx.query(`select public.place_order('[]'::jsonb, '{}'::jsonb)`)), 'a visitor placed an order')
-    check('checkout: required details are enforced', await fails(customer, tx => tx.query(`select public.place_order($1::jsonb, '{}'::jsonb)`, [JSON.stringify([{ product_id: prodA, quantity: 1 }])])), 'order without name/phone/address accepted')
+    check('checkout: required details are enforced', await fails(customer, tx => tx.query(`select public.place_order($1::jsonb, '{}'::jsonb)`, [JSON.stringify([line(1)])])), 'order without name/phone/address accepted')
     check('checkout: empty carts are rejected', await fails(customer, tx => tx.query(`select public.place_order('[]'::jsonb, $1::jsonb)`, [JSON.stringify(details)])), 'empty order accepted')
 
     let orderId: string | undefined
     try {
-      orderId = (await place(customer, [{ product_id: prodA, quantity: 2, price: 0.01 }]))[0]
+      orderId = (await place(customer, [line(2, { price: 0.01 })]))[0]
     } catch (err) {
       return check('checkout: a customer can place an order', false, (err as Error).message)
     }
     const { rows: [order] } = await db.query<{ subtotal: string, total: string, delivery_fee: string, created_by: string, status: string }>(
       `select subtotal, total, delivery_fee, created_by, status from public.shop_order where id = $1`, [orderId])
     check('checkout: a customer can place an order', Boolean(order), 'no order row')
-    check('checkout: prices come from the database, not the app', Number(order!.subtotal) === price * 2, `subtotal ${order!.subtotal}, expected ${price * 2}`)
-    const expectedFee = c.delivery.freeFrom !== undefined && price * 2 >= c.delivery.freeFrom ? 0 : c.delivery.fee
-    check('checkout: delivery fee and total are computed', Number(order!.delivery_fee) === expectedFee && Number(order!.total) === price * 2 + expectedFee, `fee ${order!.delivery_fee}, total ${order!.total}`)
+    check('checkout: prices come from the database, not the app', Number(order!.subtotal) === unit * 2, `subtotal ${order!.subtotal}, expected ${unit * 2}`)
+    const expectedFee = c.delivery.freeFrom !== undefined && unit * 2 >= c.delivery.freeFrom ? 0 : c.delivery.fee
+    check('checkout: delivery fee and total are computed', Number(order!.delivery_fee) === expectedFee && Number(order!.total) === unit * 2 + expectedFee, `fee ${order!.delivery_fee}, total ${order!.total}`)
     check('checkout: the order belongs to the customer', order!.created_by === customer.id, 'created_by is not the customer')
     const items = await db.query<{ unit_price: string, quantity: number }>(`select unit_price, quantity from public.shop_order_item where order_id = $1`, [orderId])
-    check('checkout: order lines copy price and quantity', items.rows.length === 1 && Number(items.rows[0]!.unit_price) === price && items.rows[0]!.quantity === 2, JSON.stringify(items.rows))
+    check('checkout: order lines copy price and quantity', items.rows.length === 1 && Number(items.rows[0]!.unit_price) === unit && items.rows[0]!.quantity === 2, JSON.stringify(items.rows))
     if (c.stock) {
-      const stock = Number((await db.query<{ s: number }>(`select ${c.stock} as s from ${pt} where id = $1`, [prodA])).rows[0]!.s)
+      const stock = await stockNow()
       check('checkout: stock is reserved', stock === 3, `stock is ${stock}, expected 3`)
-      check('checkout: you cannot order more than is in stock', await fails(customer, tx => tx.query(`select public.place_order($1::jsonb, $2::jsonb)`, [JSON.stringify([{ product_id: prodA, quantity: 4 }]), JSON.stringify(details)])), 'oversold')
+      check('checkout: you cannot order more than is in stock', await fails(customer, tx => tx.query(`select public.place_order($1::jsonb, $2::jsonb)`, [JSON.stringify([line(4)]), JSON.stringify(details)])), 'oversold')
     }
     check('orders: customers see their own orders and lines', (await count(customer, `select 1 from public.shop_order where id = $1`, [orderId])) === 1
       && (await count(customer, `select 1 from public.shop_order_item where order_id = $1`, [orderId])) === 1, 'customer cannot read the order')
@@ -348,12 +442,12 @@ export async function verifyDb(spec: NormalizedSpec, migrations: { name: string,
     check('orders: nobody can rewrite totals from an app', Number(after.total) === Number(order!.total), `total changed to ${after.total}`)
     check('orders: confirmed orders cannot be cancelled by the customer', await fails(customer, tx => tx.query(`select public.cancel_order($1)`, [orderId])), 'cancelled after confirmation')
 
-    const second = (await place(customer, [{ product_id: prodA, quantity: 1 }]))[0]!
+    const second = (await place(customer, [line(1)]))[0]!
     await as(customer, tx => tx.query(`select public.cancel_order($1)`, [second]))
     const cancelled = (await db.query<{ status: string }>(`select status from public.shop_order where id = $1`, [second])).rows[0]!
     check('orders: customers can cancel new orders', cancelled.status === 'cancelled', `status ${cancelled.status}`)
     if (c.stock) {
-      const stock = Number((await db.query<{ s: number }>(`select ${c.stock} as s from ${pt} where id = $1`, [prodA])).rows[0]!.s)
+      const stock = await stockNow()
       check('orders: cancelling returns stock', stock === 3, `stock is ${stock}, expected 3`)
     }
     check('orders: cancelled orders stay cancelled', await fails(alice, tx => tx.query(`update public.shop_order set status = 'new' where id = $1`, [second])), 'reopened a cancelled order')
@@ -361,16 +455,51 @@ export async function verifyDb(spec: NormalizedSpec, migrations: { name: string,
     if (c.active) {
       await db.query(`update ${pt} set ${c.active} = false where id = $1`, [prodA])
       check('catalog: hidden products are invisible to visitors', (await count(ANON, `select 1 from ${pt} where id = $1`, [prodA])) === 0, 'visitor sees a hidden product')
-      check('catalog: hidden products cannot be ordered', await fails(customer, tx => tx.query(`select public.place_order($1::jsonb, $2::jsonb)`, [JSON.stringify([{ product_id: prodA, quantity: 1 }]), JSON.stringify(details)])), 'ordered a hidden product')
+      check('catalog: hidden products cannot be ordered', await fails(customer, tx => tx.query(`select public.place_order($1::jsonb, $2::jsonb)`, [JSON.stringify([line(1)]), JSON.stringify(details)])), 'ordered a hidden product')
       check('catalog: staff still see hidden products', (await count(alice, `select 1 from ${pt} where id = $1`, [prodA])) === 1, 'staff lost the product')
       await db.query(`update ${pt} set ${c.active} = true where id = $1`, [prodA])
+    }
+
+    if (c.variants) {
+      const withoutOption = { product_id: prodA, quantity: 1 }
+      check('options: a product with options needs one chosen', await fails(customer, tx => tx.query(`select public.place_order($1::jsonb, $2::jsonb)`, [JSON.stringify([withoutOption]), JSON.stringify(details)])), 'ordered without choosing')
+      const other = orgB ? samples[orgB]!.shop_variant : undefined
+      if (other) check('options: an option must belong to the product', await fails(customer, tx => tx.query(`select public.place_order($1::jsonb, $2::jsonb)`, [JSON.stringify([{ ...withoutOption, variant_id: other }]), JSON.stringify(details)])), 'used another product\'s option')
+      await db.query(`update public.shop_variant set active = false where id = $1`, [variant])
+      check('options: unavailable options cannot be ordered', await fails(customer, tx => tx.query(`select public.place_order($1::jsonb, $2::jsonb)`, [JSON.stringify([line(1)]), JSON.stringify(details)])), 'ordered an unavailable option')
+      await db.query(`update public.shop_variant set active = true where id = $1`, [variant])
+      check('options: visitors can read them', (await count(ANON, `select 1 from public.shop_variant where id = $1`, [variant])) === 1, 'options hidden from visitors')
+    }
+
+    if (c.payments.some(m => m !== 'cash')) {
+      const pay = (tx: Transaction, amount: number, ref: string) => tx.query(`select public.confirm_payment($1, 'click', $2, $3)`, [orderId, ref, amount])
+      const total = Number(order!.total)
+      check('payments: customers cannot mark an order paid', await fails(customer, tx => pay(tx, total, 'x1')), 'a customer confirmed a payment')
+      check('payments: staff cannot mark an order paid through the function', await fails(alice, tx => pay(tx, total, 'x2')), 'staff called confirm_payment')
+      const service = (amount: number, ref: string) => asService(tx => tx.query(`select public.confirm_payment($1, 'click', $2, $3)`, [orderId, ref, amount]))
+      let wrong = false
+      try { await service(total - 1, 'x3') } catch { wrong = true }
+      check('payments: the paid amount must match the order total', wrong, 'a short payment was accepted')
+      await service(total, 'x4')
+      await service(total, 'x4')
+      const paid = (await db.query<{ payment_status: string }>(`select payment_status from public.shop_order where id = $1`, [orderId])).rows[0]!
+      const events = await db.query(`select 1 from public.payment_event where external_id = 'x4'`)
+      check('payments: a confirmed payment marks the order paid', paid.payment_status === 'paid', paid.payment_status)
+      check('payments: repeated provider callbacks count once', events.rows.length === 1, `${events.rows.length} events`)
+      check('payments: apps cannot read payment events', await fails(customer, tx => tx.query(`select 1 from public.payment_event`)), 'payment events readable')
+      let cancelledPay = false
+      const secondTotal = Number((await db.query<{ total: string }>(`select total from public.shop_order where id = $1`, [second])).rows[0]!.total)
+      try { await asService(tx => tx.query(`select public.confirm_payment($1, 'click', 'x5', $2)`, [second, secondTotal])) } catch { cancelledPay = true }
+      check('payments: a cancelled order cannot be paid', cancelledPay, 'paid a cancelled order')
     }
 
     if (type === 'marketplace' && orgB) {
       const prodB = samples[orgB]![product.name]
       if (c.stock && prodB) await db.query(`update ${pt} set ${c.stock} = 5 where id = $1`, [prodB])
+      const variantB = c.variants ? samples[orgB]!.shop_variant : undefined
+      if (variantB) await db.query(`update public.shop_variant set stock = 5 where id = $1`, [variantB])
       try {
-        const ids = await place(customer, [{ product_id: prodA, quantity: 1 }, { product_id: prodB, quantity: 1 }])
+        const ids = await place(customer, [line(1), { product_id: prodB, quantity: 1, ...(variantB ? { variant_id: variantB } : {}) }])
         const { rows } = await db.query<{ org_id: string }>(`select org_id from public.shop_order where id = any($1::uuid[])`, [ids])
         check('marketplace: a cart is split into one order per seller', ids.length === 2 && new Set(rows.map(r => r.org_id)).size === 2, `${ids.length} orders`)
         check('marketplace: sellers only see their own orders', (await count(bob, `select 1 from public.shop_order where id = any($1::uuid[])`, [ids])) === 1, 'seller sees another seller\'s order')
@@ -379,6 +508,18 @@ export async function verifyDb(spec: NormalizedSpec, migrations: { name: string,
       }
     }
   }
+}
+
+// An opening hour on the nth day from now that the business is open.
+function slotOnDay(s: NonNullable<NormalizedSpec['scheduling']>, n: number, time = s.open) {
+  const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+  const d = new Date(Date.now() + 864e5)
+  let open = 0
+  for (;;) {
+    if (!s.closedDays.includes(days[d.getUTCDay()] as never) && ++open === n) break
+    d.setUTCDate(d.getUTCDate() + 1)
+  }
+  return `${d.toISOString().slice(0, 10)}T${time}:00+05:00`
 }
 
 // A value an outsider might try to sneak into a staff-only field.

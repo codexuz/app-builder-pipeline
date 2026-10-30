@@ -1,0 +1,154 @@
+/* Shared mobile styles. Colours come from Ionic variables so light and dark mode both work. */
+.menu-icon {
+  font-size: 20px;
+  color: var(--ion-color-medium);
+}
+
+ion-item.menu-active {
+  --background: rgba(var(--ion-color-primary-rgb), 0.1);
+  --color: var(--ion-color-primary);
+}
+
+ion-item.menu-active .menu-icon {
+  color: var(--ion-color-primary);
+}
+
+.field-error {
+  display: block;
+  padding: 4px 16px 0;
+  font-size: 12px;
+  color: var(--ion-color-danger);
+}
+
+.muted {
+  color: var(--ion-color-medium);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.stat-card {
+  margin: 0;
+}
+
+.stat-value {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ion-text-color);
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.auth-wrap {
+  max-width: 420px;
+  margin: 0 auto;
+  padding-top: 8vh;
+}
+
+.empty-state {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--ion-color-medium);
+}
+
+.empty-state .iconify {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+/* Picker rows read like Ionic's stacked inputs: small label above the value. */
+.picker-label {
+  font-size: 12px !important;
+  color: var(--ion-text-color) !important;
+}
+
+/* Shop */
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+@media (min-width: 768px) {
+  .shop-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.shop-card {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.shop-image {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  color: var(--ion-color-medium);
+  background: var(--ion-color-step-100, #f2f2f2);
+}
+
+.shop-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shop-title {
+  font-size: 14px;
+  line-height: 1.3;
+  color: var(--ion-text-color);
+}
+
+.shop-price {
+  margin-top: 4px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--ion-text-color);
+}
+
+.gallery {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+
+.gallery img {
+  flex: 0 0 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  scroll-snap-align: start;
+}
+
+.qty-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+/* Style parts: each file in ../styles sets the tokens used here. */
+html, ion-title, h1, h2, ion-list-header { font-family: var(--ion-font-family); }
+.hero { position: relative; overflow: hidden; isolation: isolate; }
+.hero-motif { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
+.hero-title, .section-title { font-family: var(--font-display); margin: 0; font-size: 28px; line-height: 1.15; }
+.hero-text { margin: 10px 0 14px; line-height: 1.45; }
+.shop-card { border-radius: var(--card-radius, 8px); }
+.shop-image { aspect-ratio: var(--image-ratio, 1); border-radius: var(--image-radius, 0); overflow: hidden; }
+.slot-row { display: flex; overflow-x: auto; scrollbar-width: none; padding-bottom: 6px; }
+.slot-row ion-chip { flex: none; }

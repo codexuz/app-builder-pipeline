@@ -15,13 +15,13 @@ const retry = () => window.location.reload()
     <div class="flex min-h-dvh flex-col items-center justify-center gap-4 px-4 text-center">
       <UIcon :name="notFound ? 'i-lucide-map-pin-off' : offline ? 'i-lucide-wifi-off' : 'i-lucide-triangle-alert'" class="size-10 text-muted" />
       <h1 class="text-xl font-semibold text-highlighted">
-        {{ notFound ? 'Page not found' : offline ? 'Cannot load your workspace' : 'Something went wrong' }}
+        {{ notFound ? t('form.notFound') : t('e.generic') }}
       </h1>
       <p class="max-w-md text-sm text-muted">
-        {{ notFound ? 'The page you are looking for does not exist.' : error.statusMessage || error.message }}
+        {{ notFound ? t('form.notFoundNote') : error.statusMessage || error.message }}
       </p>
-      <UButton v-if="offline" label="Try again" icon="i-lucide-refresh-cw" @click="retry" />
-      <UButton v-else label="Go to the home page" @click="clearError({ redirect: '/' })" />
+      <UButton v-if="offline" :label="t('form.again')" icon="i-lucide-refresh-cw" @click="retry" />
+      <UButton v-else :label="t('site.home')" @click="clearError({ redirect: '/' })" />
     </div>
   </UApp>
 </template>

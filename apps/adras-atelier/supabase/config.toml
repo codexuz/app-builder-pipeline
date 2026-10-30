@@ -1,0 +1,7 @@
+project_id = "adras-atelier"
+
+[functions.payment-click]
+verify_jwt = false
+
+[functions.payment-payme]
+verify_jwt = false

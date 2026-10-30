@@ -22,9 +22,9 @@ const recent = navEntities()[0]
 function tileValue(c: (typeof dashboard)[number], i: number) {
   const v = Number(stats.value?.[`c${i}`] ?? 0)
   if (c.type === 'sum' && fieldOf(entityByName(c.entity)!, c.field)?.type === 'money') return formatMoney(v)
-  return new Intl.NumberFormat(app.locale).format(v)
+  return formatNumber(v)
 }
-const tileLabel = (c: (typeof dashboard)[number]) => c.label ?? entityByName(c.entity)!.plural
+const tileLabel = (c: (typeof dashboard)[number]) => tl(c.label ?? entityByName(c.entity)!.plural)
 
 function breakdownRows(c: (typeof dashboard)[number], i: number) {
   if (c.type !== 'breakdown') return []

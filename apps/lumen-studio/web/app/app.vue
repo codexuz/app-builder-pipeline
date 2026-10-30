@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { app } from '#core/schema'
 
+const { lang } = useLang()
 useHead({
-  titleTemplate: t => (t ? `${t} · ${app.name}` : app.name),
+  titleTemplate: title => (title ? `${title} · ${app.name}` : app.name),
   meta: [{ name: 'description', content: app.description }],
-  htmlAttrs: { lang: app.locale.split('-')[0] }
+  htmlAttrs: { 'lang': lang, 'data-style': app.style }
 })
 </script>
 

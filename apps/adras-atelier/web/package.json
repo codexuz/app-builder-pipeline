@@ -1,0 +1,24 @@
+{
+  "name": "@adras-atelier/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3000",
+    "build": "nuxt build",
+    "preview": "node .output/server/index.mjs",
+    "typecheck": "nuxt typecheck",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@app-pipeline/core": "*",
+    "@adras-atelier/shared": "*",
+    "@iconify-json/lucide": "^1.2.149",
+    "@nuxt/ui": "^4.12.0",
+    "nuxt": "^4.6.3",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "typescript": "~5.9.3",
+    "vue-tsc": "^3.3.14"
+  }
+}

@@ -1,0 +1,44 @@
+/* market: Chorsu bazaar. Painted awnings, hand-written price cards, stalls packed edge to edge.
+   Dense on purpose, shopped like Uzum: search first, price first, many products per screen. */
+html[data-style="market"], html[data-style="market"].dark {
+  --font-sans: "Golos Text", system-ui, sans-serif;
+  --font-display: "Unbounded", "Golos Text", sans-serif;
+  --display-weight: 700;
+  --display-tracking: -0.02em;
+  --display-case: none;
+  --ui-bg: #fffdf7;
+  --ui-bg-elevated: #fbf3df;
+  --ui-text: #2b2118;
+  --ui-text-highlighted: #1c130b;
+  --ui-text-muted: #6b5a48;
+  --ui-text-dimmed: #8a7862;
+  --ui-border: #eadfc8;
+  --ui-border-accented: #d9c9a8;
+  --ui-primary: var(--ui-color-primary-600);
+  --awning-a: var(--ui-color-primary-600);
+  --awning-b: #ffb703;
+  --ui-radius: 0.5rem;
+  --chip-radius: 0.5rem;
+  --media-radius: 0.625rem;
+  --media-ground: #fbf3df;
+  --cols-sm: 2;
+  --cols-md: 4;
+  --cols-lg: 5;
+  --grid-gap: 0.875rem 0.75rem;
+  --footer-ground: #1c130b;
+  --footer-ink: #cdbba3;
+  --footer-strong: #ffb703;
+}
+
+[data-style="market"] .site-header { box-shadow: 0 6px 18px -14px rgb(28 19 11 / 0.5); }
+[data-style="market"] .site-brand { font-size: 1.375rem; color: var(--ui-primary); }
+[data-style="market"] .site-hero { background: #ffb703; }
+[data-style="market"] .site-hero__inner { padding-block: clamp(1.75rem, 4vw, 3rem); }
+[data-style="market"] .site-hero__title { font-size: clamp(1.625rem, 4vw, 2.75rem); max-width: 22ch; --hero-ink: #1c130b; color: #1c130b; }
+[data-style="market"] .site-hero__text { color: #4a3510; }
+[data-style="market"] .site-section { padding-block: 1.75rem; }
+[data-style="market"] .site-h2 { font-size: 1.25rem; }
+/* Price card first, like the handwritten tag on a stall. */
+[data-style="market"] .rec__price { order: -1; font-size: 1.1875rem; }
+[data-style="market"] .rec__title { font-size: 0.875rem; }
+[data-style="market"] .rec__body { padding-top: 0.5rem; }

@@ -28,6 +28,14 @@ export default defineNuxtConfig({
     }
   ],
 
+  // Uzbek needs Latin Extended, Russian needs Cyrillic.
+  fonts: {
+    defaults: {
+      subsets: ['latin', 'latin-ext', 'cyrillic', 'cyrillic-ext'],
+      weights: [400, 500, 600, 700]
+    }
+  },
+
   vite: {
     optimizeDeps: {
       include: ['@supabase/supabase-js', 'zod']

@@ -1,0 +1,25 @@
+/* fashion: adras ikat. Sharp edges, tall uppercase type, a full-height dyed hero. */
+:root {
+  --ion-font-family: "Commissioner", system-ui, sans-serif;
+  --font-display: "Oswald", "Commissioner", sans-serif;
+  --ion-background-color: #ffffff;
+  --ion-text-color: #1d1520;
+  --ion-toolbar-background: #120b16;
+  --ion-toolbar-color: #ffffff;
+  --ion-color-primary: #120b16;
+  --ion-color-primary-rgb: 18, 11, 22;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade: #000000;
+  --ion-color-primary-tint: #2a2030;
+  --ikat-ground: #2a0a3e;
+  --ikat-a: #e0115f;
+  --ikat-b: #0f9d76;
+  --ikat-c: #ffc20e;
+  --card-radius: 0;
+  --image-radius: 0;
+  --image-ratio: 3 / 4;
+}
+.hero { min-height: 62vh; display: flex; flex-direction: column; justify-content: flex-end; color: #fff; }
+.hero-title { text-transform: uppercase; font-size: 46px; line-height: 1; background: var(--ikat-ground); padding: 8px 10px; }
+.hero-text { background: var(--ikat-ground); padding: 8px 10px; color: #f1e6f5; }
+.shop-title { font-family: var(--font-display); text-transform: uppercase; }

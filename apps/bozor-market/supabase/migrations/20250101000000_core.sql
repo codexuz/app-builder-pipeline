@@ -197,6 +197,41 @@ create trigger on_auth_user_email_changed after update of email on auth.users
   execute function public.handle_user_email_change();
 
 -- ---------------------------------------------------------------------------
+-- Spam limits for forms open to the public. Addresses are stored hashed, and only for a day.
+-- ---------------------------------------------------------------------------
+create table public.submission_log (
+  id bigint generated always as identity primary key,
+  sender text not null,
+  table_name text not null,
+  created_at timestamptz not null default now()
+);
+create index submission_log_sender_idx on public.submission_log(sender, table_name, created_at desc);
+create index submission_log_created_idx on public.submission_log(created_at);
+alter table public.submission_log enable row level security;
+
+create or replace function public.limit_submissions(p_table text, p_kind text)
+returns void language plpgsql security definer set search_path = '' as $$
+declare
+  v_headers jsonb := nullif(current_setting('request.headers', true), '')::jsonb;
+  v_address text := split_part(coalesce(v_headers ->> 'x-forwarded-for', v_headers ->> 'cf-connecting-ip', ''), ',', 1);
+  v_sender text := md5(coalesce(auth.uid()::text, nullif(btrim(v_address), ''), 'unknown'));
+  -- Limits are fixed here so nobody can call this with generous ones of their own.
+  v_per_sender int := case p_kind when 'inbox' then 5 else 20 end;
+  v_per_hour int := case p_kind when 'inbox' then 200 else 1000 end;
+begin
+  if (select count(*) from public.submission_log
+      where sender = v_sender and table_name = p_table and created_at > now() - interval '10 minutes') >= v_per_sender then
+    raise exception 'Too many messages. Please wait a few minutes and try again.' using errcode = 'P0001';
+  end if;
+  if (select count(*) from public.submission_log
+      where table_name = p_table and created_at > now() - interval '1 hour') >= v_per_hour then
+    raise exception 'We are receiving a lot of messages right now. Please try again later.' using errcode = 'P0001';
+  end if;
+  insert into public.submission_log (sender, table_name) values (v_sender, p_table);
+  delete from public.submission_log where created_at < now() - interval '1 day';
+end $$;
+
+-- ---------------------------------------------------------------------------
 -- RPCs
 -- ---------------------------------------------------------------------------
 create or replace function public.create_organization(p_name text, p_personal boolean default false)

@@ -1,0 +1,25 @@
+/* studio: suzani. Pomegranate field with a stitched medallion, warm and personal. */
+:root {
+  --ion-font-family: "Mulish", system-ui, sans-serif;
+  --font-display: "Philosopher", "Mulish", serif;
+  --ion-background-color: #fff8f6;
+  --ion-text-color: #3a1a22;
+  --ion-toolbar-background: #7d1531;
+  --ion-toolbar-color: #fff4ee;
+  --ion-item-background: #fff8f6;
+  --ion-border-color: #f0d6cf;
+  --ion-color-primary: #9f1f3f;
+  --ion-color-primary-rgb: 159, 31, 63;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-shade: #8c1b37;
+  --ion-color-primary-tint: #a93552;
+  --suzani-a: #c8314f;
+  --suzani-b: #1d2a66;
+  --suzani-c: #f0b23c;
+  --card-radius: 14px;
+  --image-radius: 50%;
+}
+.hero { background: #7d1531; color: #fff4ee; padding-block: 40px; }
+.hero-title { color: #fff4ee; }
+.hero-text { color: #fbd9d0; }
+.hero-motif { width: 240px !important; height: 240px !important; inset: auto -60px -60px auto !important; opacity: 0.5; }

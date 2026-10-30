@@ -6,10 +6,15 @@ export const app = {
   "type": "personal",
   "color": "violet",
   "appId": "com.circle.social",
-  "currency": "USD",
-  "locale": "en-US",
+  "currency": "UZS",
+  "languages": [
+    "uz",
+    "ru",
+    "en"
+  ],
   "publicProfiles": true,
-  "publicSite": false
+  "publicSite": false,
+  "style": "studio"
 }
 
 export const entities = [
@@ -30,6 +35,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Headline",
         "list": true,
         "search": true
@@ -43,6 +49,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Body",
         "list": false,
         "search": false
@@ -62,6 +69,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Topic",
         "list": true,
         "search": false
@@ -74,6 +82,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Link",
         "list": true,
         "search": false
@@ -86,11 +95,13 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Tags",
         "list": true,
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -137,6 +148,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Post",
         "list": true,
         "search": false,
@@ -153,10 +165,12 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Body",
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -194,12 +208,14 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false,
         "alias": "following",
         "fk": "follow_following_id_fkey"
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -237,6 +253,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Post",
         "list": true,
         "search": false,
@@ -251,11 +268,13 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Note",
         "list": true,
         "search": true
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -313,7 +332,11 @@ export const dashboard = [
 
 export const commerce = null
 
+export const scheduling = null
+
 export const site = null
+
+export const translations = {}
 
 export interface Post {
   id: string

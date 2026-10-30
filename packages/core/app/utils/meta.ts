@@ -2,6 +2,7 @@
 // generic screens read it so every entity gets list, detail, create and edit pages for free.
 import { app, entities } from '#core/schema'
 import { formatValue } from '#core/utils/format'
+import { localized } from '#core/utils/i18n'
 
 export const ROLES = ['viewer', 'member', 'admin', 'owner'] as const
 export type Role = typeof ROLES[number]
@@ -30,6 +31,7 @@ export interface FieldMeta {
   staff: boolean
   readonly: boolean
   auto: boolean
+  translate: boolean
   alias?: string
   fk?: string
 }
@@ -51,6 +53,7 @@ export interface EntityMeta {
   customerCan: ('update' | 'delete')[]
   publicRead: boolean
   createdByFunction: boolean
+  builtIn: boolean
   attachments: boolean
   realtime: boolean
   sort: { field: string, dir: 'asc' | 'desc' }
@@ -63,10 +66,11 @@ export interface AppMeta {
   slug: string
   description: string
   type: 'team' | 'personal' | 'business' | 'marketplace'
+  style: 'market' | 'fashion' | 'fresh' | 'luxury' | 'studio'
   color: string
   appId: string
   currency: string
-  locale: string
+  languages: string[]
   publicProfiles: boolean
   publicSite: boolean
 }
@@ -79,6 +83,24 @@ export interface CommerceMeta {
   payments: string[]
   delivery: { fee: number, freeFrom?: number }
   orderFields: FieldMeta[]
+  variants: boolean
+  variantLabel: string
+}
+
+export interface SchedulingMeta {
+  entity: string
+  start: string
+  service?: string
+  duration?: string
+  length: number
+  resource?: string
+  status?: string
+  inactive: string[]
+  open: string
+  close: string
+  step: number
+  closedDays: string[]
+  timezone: string
 }
 
 export type SectionMeta =
@@ -123,8 +145,10 @@ export function selectFor(e: EntityMeta): string {
     f.type === 'user'
       ? `${f.alias}:profiles!${f.fk}(${PROFILE_COLUMNS})`
       : `${f.alias}:${f.to}!${f.fk}(${titleColumns(entityByName(f.to!)!)})`)
+  // Each cart line and product page needs the options of the product.
+  const options = e.children.some(c => c.entity === 'shop_variant') ? ['variants:shop_variant(id, name, price, stock, active)'] : []
   const seller = app.type === 'marketplace' && (e.access === 'public' || e.access === 'customer') ? ['seller:organizations(id, name)'] : []
-  return ['*', ...embeds, ...seller, `creator:profiles!${e.name}_created_by_fkey(${PROFILE_COLUMNS})`].join(', ')
+  return ['*', ...embeds, ...options, ...seller, `creator:profiles!${e.name}_created_by_fkey(${PROFILE_COLUMNS})`].join(', ')
 }
 export const titleSelectFor = (e: EntityMeta) => titleColumns(e)
 
@@ -132,12 +156,12 @@ export const personName = (p?: Profile | null) => p?.full_name || p?.email || 'U
 
 export function recordTitle(e: EntityMeta, row: Record<string, any> | null | undefined): string {
   if (!row) return '—'
-  if (e.name === 'shop_order') return `Order #${row.number}`
+  if (e.name === 'shop_order') return t('order.title', { n: row.number })
   const f = fieldOf(e, e.title)
   if (!f) return row.id
   if (f.type === 'relation') return recordTitle(entityByName(f.to!)!, row[f.alias!])
   if (f.type === 'user') return personName(row[f.alias!])
-  const text = formatValue(f, row[f.name])
+  const text = formatValue(f, ['text', 'longtext'].includes(f.type) ? localized(row, f.name) : row[f.name])
   return text === '—' ? `${e.label} ${String(row.id).slice(0, 8)}` : text
 }
 

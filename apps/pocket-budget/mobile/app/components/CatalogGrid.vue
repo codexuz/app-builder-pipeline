@@ -19,7 +19,12 @@ const total = ref(0)
 const page = ref(1)
 const loading = ref(true)
 const isProduct = props.entity.name === commerce?.product
-const priceOf = (row: Row) => formatMoney(Number(row[commerce!.price]))
+const optionsOf = (row: Row) => (row.variants as Row[] | undefined)?.filter(v => v.active) ?? []
+const priceOf = (row: Row) => {
+  const base = Number(row[commerce!.price])
+  const prices = optionsOf(row).map(v => Number(v.price ?? base))
+  return formatMoney(prices.length ? Math.min(...prices) : base)
+}
 const soldOut = (row: Row) => isProduct && commerce!.stock ? Number(row[commerce!.stock]) <= 0 : false
 const hasPage = props.entity.access === 'public'
 
@@ -35,7 +40,7 @@ async function reload() {
   try {
     await fetchPage(1)
   } catch (err) {
-    await notify.error(`Could not load ${props.entity.plural.toLowerCase()}`, err)
+    await notify.error(t('form.couldNotLoad'), err)
   } finally {
     loading.value = false
   }
@@ -51,7 +56,7 @@ async function loadMore(ev: InfiniteScrollCustomEvent) {
 
 async function add(row: Row) {
   cart.add(row.id)
-  await notify.toast(`${recordTitle(props.entity, row)} added to cart`, 'success', 1500)
+  await notify.toast(t('shop.added', { name: recordTitle(props.entity, row) }), 'success', 1500)
 }
 
 watch(() => props.search, reload)
@@ -63,7 +68,7 @@ defineExpose({ reload })
   <div>
     <div v-if="!loading && !rows.length" class="empty-state">
       <Icon :name="entity.icon" />
-      <p>{{ search ? 'No matches.' : `No ${entity.plural.toLowerCase()} yet.` }}</p>
+      <p>{{ search ? t('shop.nothing') : t('shop.emptyList') }}</p>
     </div>
     <div class="shop-grid">
       <ion-card
@@ -82,8 +87,9 @@ defineExpose({ reload })
           <div class="shop-title">{{ recordTitle(entity, row) }}</div>
           <div v-if="isProduct" class="shop-price">{{ priceOf(row) }}</div>
         </ion-card-header>
-        <ion-button v-if="isProduct" expand="block" fill="clear" size="small" :disabled="soldOut(row)" @click.stop.prevent="add(row)">
-          {{ soldOut(row) ? 'Sold out' : 'Add to cart' }}
+        <ion-button v-if="isProduct && optionsOf(row).length" expand="block" fill="clear" size="small">{{ t('shop.choose') }}</ion-button>
+        <ion-button v-else-if="isProduct" expand="block" fill="clear" size="small" :disabled="soldOut(row)" @click.stop.prevent="add(row)">
+          {{ soldOut(row) ? t('shop.soldOut') : t('shop.add') }}
         </ion-button>
       </ion-card>
     </div>

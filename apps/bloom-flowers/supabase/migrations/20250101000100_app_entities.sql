@@ -106,7 +106,7 @@ create table public.shop_order (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint shop_order_status_chk check (status in ('new', 'confirmed', 'packed', 'shipped', 'delivered', 'cancelled')),
-  constraint shop_order_payment_method_chk check (payment_method in ('cash')),
+  constraint shop_order_payment_method_chk check (payment_method in ('cash', 'click', 'payme')),
   constraint shop_order_payment_status_chk check (payment_status in ('unpaid', 'paid', 'refunded')),
   constraint shop_order_customer_name_req check (char_length(btrim(customer_name)) > 0),
   constraint shop_order_customer_name_len check (char_length(customer_name) <= 500),
@@ -272,6 +272,9 @@ begin
   if new.bouquet_id is not null and not exists (select 1 from public.bouquet where id = new.bouquet_id) then
     raise exception 'Bouquet must point to a bouquet you can access' using errcode = '23503';
   end if;
+  if tg_op = 'INSERT' and current_user in ('anon', 'authenticated') and not public.has_org_role(new.org_id, 'viewer') then
+    perform public.limit_submissions('review', 'customer');
+  end if;
   return new;
 end $$;
 
@@ -300,6 +303,9 @@ begin
   -- Status: set only by staff
   if current_user in ('anon', 'authenticated') and not public.has_org_role(new.org_id, 'viewer') then
     if tg_op = 'INSERT' then new.status := 'new'; else new.status := old.status; end if;
+  end if;
+  if tg_op = 'INSERT' and current_user in ('anon', 'authenticated') and not public.has_org_role(new.org_id, 'viewer') then
+    perform public.limit_submissions('inquiry', 'inbox');
   end if;
   return new;
 end $$;
@@ -552,7 +558,7 @@ begin
   if jsonb_array_length(p_items) > 100 then
     raise exception 'Too many items in one order' using errcode = 'P0001';
   end if;
-  if p_details ->> 'payment_method' is not null and p_details ->> 'payment_method' not in ('cash') then
+  if p_details ->> 'payment_method' is not null and p_details ->> 'payment_method' not in ('cash', 'click', 'payme') then
     raise exception 'This payment method is not available' using errcode = 'P0001';
   end if;
   if nullif(btrim(coalesce(p_details ->> 'customer_name', '')), '') is null then
@@ -652,6 +658,51 @@ end $$;
 
 create trigger shop_order_status_change before update of status on public.shop_order
   for each row execute function public.shop_order_status_change();
+
+create table public.payment_event (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.shop_order(id) on delete cascade,
+  provider text not null,
+  external_id text not null,
+  amount numeric(14,2) not null,
+  state text not null default 'created',
+  payload jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (provider, external_id)
+);
+create index payment_event_order_idx on public.payment_event(order_id);
+alter table public.payment_event enable row level security;
+-- No policies: apps never touch this table.
+
+create or replace function public.confirm_payment(p_order uuid, p_provider text, p_external_id text, p_amount numeric, p_payload jsonb default null)
+returns text language plpgsql security definer set search_path = '' as $$
+declare
+  v_order public.shop_order;
+begin
+  select * into v_order from public.shop_order where id = p_order for update;
+  if not found then
+    raise exception 'Order not found' using errcode = 'P0002';
+  end if;
+  if v_order.status = 'cancelled' then
+    raise exception 'This order was cancelled' using errcode = 'P0001';
+  end if;
+  if p_amount <> v_order.total then
+    raise exception 'Paid amount % does not match order total %', p_amount, v_order.total using errcode = 'P0001';
+  end if;
+  insert into public.payment_event (order_id, provider, external_id, amount, state, payload)
+  values (p_order, p_provider, p_external_id, p_amount, 'paid', p_payload)
+  on conflict (provider, external_id) do update set state = 'paid', updated_at = now();
+  if v_order.payment_status <> 'paid' then
+    update public.shop_order set payment_status = 'paid' where id = p_order;
+  end if;
+  return 'paid';
+end $$;
+
+revoke execute on function public.confirm_payment(uuid, text, text, numeric, jsonb) from public, anon, authenticated;
+grant execute on function public.confirm_payment(uuid, text, text, numeric, jsonb) to service_role;
+grant all on public.payment_event to service_role;
+revoke all on public.payment_event from anon, authenticated;
 
 -- Realtime: lists refresh live when rows change.
 do $$

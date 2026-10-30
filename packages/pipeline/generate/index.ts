@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { NormalizedSpec } from '../spec.ts'
@@ -15,14 +15,34 @@ const MIGRATIONS = new Set([CORE_MIGRATION, ENTITY_MIGRATION])
 
 export const CORE_SQL_FILE = fileURLToPath(new URL('../../core/supabase/20250101000000_core.sql', import.meta.url))
 
+const FUNCTIONS_DIR = fileURLToPath(new URL('../../core/functions', import.meta.url))
+
+// Edge Functions for the online payment methods the spec turns on.
+function paymentFunctions(spec: NormalizedSpec): Record<string, string> {
+  const online = (spec.commerce?.payments ?? []).filter(m => m !== 'cash')
+  if (!online.length) return {}
+  const dirs = ['_shared', 'payment-start', ...online.map(m => `payment-${m}`)]
+  return Object.fromEntries(dirs.flatMap(dir => readdirSync(join(FUNCTIONS_DIR, dir)).map(file =>
+    [`supabase/functions/${dir}/${file}`, readFileSync(join(FUNCTIONS_DIR, dir, file), 'utf8')])))
+}
+
+// Webhooks are called by the providers, so they prove themselves by signature instead of a user session.
+function supabaseConfig(spec: NormalizedSpec): string {
+  const hooks = (spec.commerce?.payments ?? []).filter(m => m !== 'cash')
+  return [`project_id = "${spec.app.slug}"`, ...hooks.map(m => `\n[functions.payment-${m}]\nverify_jwt = false`)].join('\n') + '\n'
+}
+
 // Every file the generator owns, relative to the product folder (apps/<slug>).
 export function generatedFiles(spec: NormalizedSpec): Record<string, string> {
   return {
+    ...paymentFunctions(spec),
+    'supabase/config.toml': supabaseConfig(spec),
     [CORE_MIGRATION]: readFileSync(CORE_SQL_FILE, 'utf8'),
     [ENTITY_MIGRATION]: generateSql(spec),
     'shared/package.json': generateSharedPackage(spec),
     'shared/schema.ts': generateSchemaTs(spec),
     'shared/icons.json': generateIcons(spec),
+    'shared/app.json': `${JSON.stringify({ style: spec.app.style }, null, 2)}\n`,
     'web/app/app.config.ts': generateWebAppConfig(spec),
     'mobile/capacitor.config.ts': generateCapacitorConfig(spec),
     'mobile/app/assets/css/theme.css': generateIonicTheme(spec)

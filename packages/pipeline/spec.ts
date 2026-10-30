@@ -28,7 +28,12 @@ export const FIELD_TYPES = [
 export type FieldType = typeof FIELD_TYPES[number]
 
 export const COLORS = ['red', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia', 'pink', 'rose'] as const
-export const PAYMENT_METHODS = ['cash'] as const
+export const PAYMENT_METHODS = ['cash', 'click', 'payme', 'stripe'] as const
+export const LANGUAGES = ['uz', 'ru', 'en'] as const
+// The look of the public site and app. Each is a complete identity, not a colour swap:
+// market (dense bazaar shop), fashion (bold lookbook), fresh (bright and round: flowers, food),
+// luxury (dark and quiet: jewellery), studio (services and bookings).
+export const STYLES = ['market', 'fashion', 'fresh', 'luxury', 'studio'] as const
 
 // Postgres reserved words plus names the core schema or routes already use.
 const PG_RESERVED = new Set(('all analyse analyze and any array as asc asymmetric authorization binary both case cast check collate collation column '
@@ -37,10 +42,10 @@ const PG_RESERVED = new Set(('all analyse analyze and any array as asc asymmetri
   + 'intersect into is isnull join lateral leading left like limit localtime localtimestamp natural not notnull null offset on only or order '
   + 'outer overlaps placing primary references returning right select session_user similar some symmetric system_user table tablesample then '
   + 'to trailing true union unique user using variadic verbose when where window with').split(' '))
-const CORE_TABLES = new Set(['organizations', 'profiles', 'memberships', 'invitations', 'audit_log', 'users', 'roles', 'shop_order', 'shop_order_item'])
-const SYSTEM_FIELDS = new Set(['id', 'org_id', 'created_at', 'updated_at', 'created_by', 'cover_url', 'creator', 'seller'])
+const CORE_TABLES = new Set(['organizations', 'profiles', 'memberships', 'invitations', 'audit_log', 'users', 'roles', 'shop_order', 'shop_order_item', 'shop_variant', 'payment_event', 'submission_log'])
+const SYSTEM_FIELDS = new Set(['id', 'org_id', 'created_at', 'updated_at', 'created_by', 'cover_url', 'creator', 'seller', 'ends_at'])
 const RESERVED_SLUGS = new Set(['app', 'login', 'signup', 'forgot-password', 'reset-password', 'onboarding', 'invite', 'settings', 'setup',
-  'auth', 'api', 'new', 'index', 'cart', 'checkout', 'account', 'sell', 'orders'])
+  'auth', 'api', 'new', 'index', 'cart', 'checkout', 'account', 'sell', 'orders', 'options'])
 
 const ident = (max: number) => z.string().regex(/^[a-z][a-z0-9_]*$/, 'use snake_case: lowercase letters, digits, underscores').max(max)
 const scalar = z.union([z.string(), z.number(), z.boolean()])
@@ -65,7 +70,9 @@ const FieldSchema = z.object({
   // Nobody edits it from an app; only database functions set it (totals, order numbers).
   readonly: z.boolean().default(false),
   // Filled by the app, not shown in forms (e.g. the cover image).
-  auto: z.boolean().default(false)
+  auto: z.boolean().default(false),
+  // Text staff write once per language: adds <name>_ru, <name>_en… for the app's other languages.
+  translate: z.boolean().default(false)
 }).strict()
 
 const PermissionsSchema = z.object({
@@ -116,7 +123,31 @@ const CommerceSchema = z.object({
     freeFrom: z.number().min(0).optional()
   }).strict().prefault({}),
   // Extra checkout questions stored on the order (delivery date, gift message, engraving…).
-  orderFields: z.array(FieldSchema).default([])
+  orderFields: z.array(FieldSchema).default([]),
+  // Sizes, colours or other options, each with its own stock and optional price.
+  variants: z.boolean().default(false),
+  variantLabel: z.string().default('Option')
+}).strict()
+
+// Time-slot booking: double-booking is impossible, enforced in the database.
+const SchedulingSchema = z.object({
+  entity: ident(28),
+  start: ident(28),
+  // Relation to what is booked, and the integer minutes field on it.
+  service: ident(28).optional(),
+  duration: ident(28).optional(),
+  // Default length when there is no service, in minutes.
+  length: z.number().int().min(5).max(720).default(60),
+  // Relation to who or what is busy (specialist, table, room). Empty on a booking means "first free one".
+  resource: ident(28).optional(),
+  // Enum field and the values that free the slot again.
+  status: ident(28).optional(),
+  inactive: z.array(z.string()).default(['cancelled']),
+  open: z.string().regex(/^\d{2}:\d{2}$/).default('09:00'),
+  close: z.string().regex(/^\d{2}:\d{2}$/).default('19:00'),
+  step: z.number().int().min(5).max(240).default(30),
+  closedDays: z.array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'])).default([]),
+  timezone: z.string().default('Asia/Tashkent')
 }).strict()
 
 const SectionSchema = z.discriminatedUnion('type', [
@@ -148,13 +179,18 @@ export const SpecSchema = z.object({
     slug: z.string().regex(/^[a-z][a-z0-9-]{1,40}$/),
     description: z.string().default(''),
     type: z.enum(APP_TYPES).default('team'),
+    style: z.enum(STYLES).optional(),
     color: z.enum(COLORS).default('indigo'),
     appId: z.string().regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*){2,}$/, 'reverse-domain id such as com.acme.shop').optional(),
-    currency: z.string().length(3).default('USD'),
-    locale: z.string().default('en-US')
+    currency: z.string().length(3).default('UZS'),
+    // The first language is the default; the others appear in the language switcher.
+    languages: z.array(z.enum(LANGUAGES)).min(1).default(['uz', 'ru', 'en'])
   }).strict(),
   entities: z.array(EntitySchema).min(1),
   commerce: CommerceSchema.optional(),
+  scheduling: SchedulingSchema.optional(),
+  // Your own words per language: { ru: { Bouquets: Букеты } }. Keys are the English labels used in the spec.
+  translations: z.partialRecord(z.enum(LANGUAGES), z.record(z.string(), z.string())).default({}),
   site: SiteSchema.optional(),
   dashboard: z.array(CardSchema).optional()
 }).strict()
@@ -182,15 +218,20 @@ export interface Entity extends Omit<RawEntity, 'fields'> {
   children: { entity: string, field: string }[]
   // Rows are only created by a database function (orders come from checkout), never inserted by an app.
   createdByFunction: boolean
+  // Added by the commerce block rather than written in the spec.
+  builtIn: boolean
 }
 export type Card = NonNullable<Spec['dashboard']>[number]
 export type Commerce = NonNullable<Spec['commerce']>
+export type Scheduling = NonNullable<Spec['scheduling']>
 export type Site = NonNullable<Spec['site']>
 export interface NormalizedSpec {
-  app: Spec['app'] & { appId: string, publicProfiles: boolean, publicSite: boolean }
+  app: Spec['app'] & { appId: string, publicProfiles: boolean, publicSite: boolean, style: typeof STYLES[number] }
   entities: Entity[]
   commerce?: Commerce
+  scheduling?: Scheduling
   site?: Site
+  translations: Spec['translations']
   dashboard: Card[]
 }
 
@@ -209,14 +250,38 @@ export function loadSpec(file: string): NormalizedSpec {
 }
 
 // Order tables added by the commerce block. Their shape is fixed so checkout, stock and payments are always correct.
-function commerceEntities(c: Commerce): RawEntity[] {
+function commerceEntities(c: Commerce): (RawEntity & { createdByFunction: boolean })[] {
   const ro = (f: Partial<RawField> & { name: string, type: FieldType }): RawField => ({
-    required: false, unique: false, cascade: false, staff: false, readonly: true, auto: false, ...f
+    required: false, unique: false, cascade: false, staff: false, readonly: true, auto: false, translate: false, ...f
   })
   const base = { icon: 'i-lucide-shopping-bag', access: 'customer' as const, own: [], customerCan: [], publicRead: false, attachments: false, realtime: true, nav: true }
+  const variants = c.variants
+    ? [{
+        ...base,
+        name: 'shop_variant',
+        label: c.variantLabel,
+        plural: 'Options',
+        icon: 'i-lucide-swatch-book',
+        title: 'name',
+        access: 'public' as const,
+        nav: false,
+        realtime: false,
+        createdByFunction: false,
+        permissions: { read: 'viewer', create: 'member', update: 'member', delete: 'admin' } as const,
+        sort: { field: 'created_at', dir: 'asc' as const },
+        fields: [
+          ro({ name: 'product_id', type: 'relation', to: c.product, required: true, cascade: true, readonly: false, label: 'Product' }),
+          ro({ name: 'name', type: 'text', required: true, readonly: false, max: 80, translate: false }),
+          ro({ name: 'price', type: 'money', min: 0, readonly: false, help: 'Leave empty to use the product price' }),
+          ro({ name: 'stock', type: 'integer', required: true, default: 0, min: 0, readonly: false }),
+          ro({ name: 'active', type: 'boolean', default: true, readonly: false, label: 'Available' })
+        ]
+      }]
+    : []
   return [
     {
       ...base,
+      createdByFunction: true,
       name: 'shop_order',
       label: 'Order',
       plural: 'Orders',
@@ -238,8 +303,10 @@ function commerceEntities(c: Commerce): RawEntity[] {
         ro({ name: 'delivery_fee', type: 'money', required: true, list: false })
       ]
     },
+    ...variants,
     {
       ...base,
+      createdByFunction: true,
       name: 'shop_order_item',
       label: 'Order item',
       plural: 'Order items',
@@ -252,7 +319,9 @@ function commerceEntities(c: Commerce): RawEntity[] {
       fields: [
         ro({ name: 'order_id', type: 'relation', to: 'shop_order', required: true, cascade: true, label: 'Order' }),
         ro({ name: 'product_id', type: 'relation', to: c.product, label: 'Product', list: false }),
+        ...(c.variants ? [ro({ name: 'variant_id', type: 'relation', to: 'shop_variant', label: c.variantLabel, list: false })] : []),
         ro({ name: 'title', type: 'text', required: true, label: 'Item' }),
+        ...(c.variants ? [ro({ name: 'variant_name', type: 'text', label: c.variantLabel })] : []),
         ro({ name: 'unit_price', type: 'money', required: true, label: 'Price' }),
         ro({ name: 'quantity', type: 'integer', required: true, min: 1 }),
         ro({ name: 'line_total', type: 'money', required: true, label: 'Total' })
@@ -280,16 +349,16 @@ export function normalizeSpec(input: unknown): NormalizedSpec {
     if (e.access === 'members' && type === 'team') issues.push(`entities.${e.name}: access members is for personal or community apps; team apps share data with access team`)
   }
 
-  const userEntities = spec.entities.map(e => ({ ...e, createdByFunction: false }))
+  const userEntities = spec.entities.map(e => ({ ...e, createdByFunction: false, builtIn: false }))
   const allEntities = spec.commerce
-    ? [...userEntities, ...commerceEntities(spec.commerce).map(e => ({ ...e, createdByFunction: true }))]
+    ? [...userEntities, ...commerceEntities(spec.commerce).map(e => ({ ...e, builtIn: true }))]
     : userEntities
   const names = new Set(allEntities.map(e => e.name))
   const slugs = new Set<string>()
 
   const entities: Entity[] = allEntities.map((e) => {
     const where = `entities.${e.name}`
-    const builtIn = e.createdByFunction
+    const builtIn = e.builtIn
     if (!builtIn && PG_RESERVED.has(e.name)) issues.push(`${where}: "${e.name}" is a SQL reserved word, pick another name (e.g. sales_${e.name})`)
     if (!builtIn && CORE_TABLES.has(e.name)) issues.push(`${where}: "${e.name}" is used by the core schema`)
     const entityLabel = e.label ?? humanize(e.name)
@@ -302,10 +371,20 @@ export function normalizeSpec(input: unknown): NormalizedSpec {
     if (e.customerCan.length && e.access !== 'customer') issues.push(`${where}: customerCan only applies to access customer`)
     if (e.own.length && e.access !== 'team') issues.push(`${where}: own only applies to access team`)
 
+    const extra = { required: false, unique: false, cascade: false, list: false, staff: false, readonly: false, auto: false, translate: false }
+    // Each translated field gets a column per extra language, next to the original in forms.
+    const otherLanguages = spec.app.languages.slice(1)
+    const translated = e.fields.flatMap(f => [f, ...(f.translate
+      ? otherLanguages.map(l => ({ ...f, ...extra, name: `${f.name}_${l}`, label: `${f.label ?? humanize(f.name)} (${l.toUpperCase()})`, translate: false, search: f.search, max: f.max }))
+      : [])])
     // Public entities with files get a cover image the shop and site show in cards.
-    const rawFields = e.access === 'public' && e.attachments
-      ? [...e.fields, { name: 'cover_url', type: 'url' as const, label: 'Cover image', required: false, unique: false, cascade: false, list: false, staff: true, readonly: false, auto: true }]
-      : e.fields
+    const withCover = e.access === 'public' && e.attachments
+      ? [...translated, { ...extra, name: 'cover_url', type: 'url' as const, label: 'Cover image', staff: true, auto: true }]
+      : translated
+    // Scheduled entities keep the computed end of each booking, used to find clashes.
+    const rawFields = spec.scheduling?.entity === e.name
+      ? [...withCover, { ...extra, name: 'ends_at', type: 'datetime' as const, label: 'Ends', readonly: true, auto: true }]
+      : withCover
 
     const fieldNames = new Set<string>()
     const fields: Field[] = rawFields.map((f) => {
@@ -326,6 +405,8 @@ export function normalizeSpec(input: unknown): NormalizedSpec {
       if (f.cascade && f.type !== 'relation') issues.push(`${fw}: cascade only applies to relation fields`)
       if (f.unique && ['boolean', 'json', 'tags', 'longtext'].includes(f.type)) issues.push(`${fw}: ${f.type} fields cannot be unique`)
       if (f.staff && f.readonly) issues.push(`${fw}: a field is either staff or readonly, not both`)
+      if (f.translate && !['text', 'longtext'].includes(f.type)) issues.push(`${fw}: translate only applies to text and longtext`)
+      if (f.translate && spec.app.languages.length < 2) issues.push(`${fw}: translate needs more than one language in app.languages`)
       if (!builtIn && f.readonly && f.required && f.default === undefined) issues.push(`${fw}: a readonly required field needs a default (only database functions can set it)`)
       if (f.default !== undefined) {
         const d = f.default
@@ -408,6 +489,38 @@ export function normalizeSpec(input: unknown): NormalizedSpec {
     }
   }
 
+  const scheduling = spec.scheduling
+  if (scheduling) {
+    const fail = (key: string, msg: string) => issues.push(`scheduling.${key}: ${msg}`)
+    const e = byName.get(scheduling.entity)
+    if (!e) fail('entity', `unknown entity "${scheduling.entity}"`)
+    else {
+      if (e.access !== 'customer') fail('entity', `"${e.name}" needs access customer`)
+      const field = (name?: string) => e.fields.find(f => f.name === name)
+      const start = field(scheduling.start)
+      if (start?.type !== 'datetime' || !start.required) fail('start', `"${scheduling.start}" must be a required datetime field of ${e.name}`)
+      if (scheduling.service) {
+        const f = field(scheduling.service)
+        if (f?.type !== 'relation' || !f.required) fail('service', `"${scheduling.service}" must be a required relation of ${e.name}`)
+        else {
+          const target = byName.get(f.to!)
+          const d = target?.fields.find(x => x.name === scheduling.duration)
+          if (d?.type !== 'integer' || !d.required) fail('duration', `must name a required integer field of ${f.to}`)
+        }
+      }
+      if (scheduling.resource) {
+        const f = field(scheduling.resource)
+        if (f?.type !== 'relation' || f.required) fail('resource', `"${scheduling.resource}" must be an optional relation of ${e.name}, so customers can choose "first free"`)
+      }
+      if (scheduling.status) {
+        const f = field(scheduling.status)
+        if (f?.type !== 'enum') fail('status', `"${scheduling.status}" must be an enum field of ${e.name}`)
+        else for (const v of scheduling.inactive) if (!f.options?.includes(v)) fail('inactive', `"${v}" is not an option of ${f.name}`)
+      }
+    }
+    if (scheduling.open >= scheduling.close) fail('open', 'must be before close')
+  }
+
   const site = spec.site
   site?.sections.forEach((s, i) => {
     if (s.type === 'text') return
@@ -465,7 +578,11 @@ export function normalizeSpec(input: unknown): NormalizedSpec {
   const appId = spec.app.appId ?? `com.example.${spec.app.slug.replace(/-/g, '')}`
   // Shared content shows its author, so names must be readable by the people who can see that content.
   const publicProfiles = entities.some(e => e.access === 'members')
-  return { app: { ...spec.app, appId, publicProfiles, publicSite: shopTypes }, entities, commerce, site, dashboard }
+  const style = spec.app.style ?? (type === 'marketplace' ? 'market' : 'studio')
+  return {
+    app: { ...spec.app, appId, publicProfiles, publicSite: shopTypes, style },
+    entities, commerce, scheduling, site, translations: spec.translations, dashboard
+  }
 }
 
 // Topological order so parents are created before children (used by migrations and tests).

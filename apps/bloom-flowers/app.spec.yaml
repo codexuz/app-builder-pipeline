@@ -8,8 +8,40 @@ app:
   type: business
   color: rose
   appId: uz.bloom.flowers
+  style: fresh
   currency: UZS
-  locale: en-US
+
+translations:
+  uz:
+    Bouquets: Guldastalar
+    Popular bouquets: Mashhur guldastalar
+    What customers say: Mijozlar fikri
+    Fresh flowers, delivered today: Yangi gullar, bugunoq yetkaziladi
+    Hand-tied bouquets from Tashkent florists. Order before 14:00 for same-day delivery.: Toshkent gulchilaridan qoʻlda bogʻlangan guldastalar. Soat 14:00 gacha buyurtma bering, shu kuni yetkazamiz.
+    Shop bouquets: Guldasta tanlash
+    Same-day delivery: Shu kuni yetkazib berish
+    "Delivery is free from 500 000 UZS. We call before arriving and send a photo of your bouquet.": 500 000 soʻmdan boshlab yetkazib berish bepul. Yetib kelishdan oldin qoʻngʻiroq qilamiz va guldasta rasmini yuboramiz.
+    Questions? Write to us: Savollaringiz bormi? Yozing
+    We reply within an hour during opening times.: Ish vaqtida bir soat ichida javob beramiz.
+    Delivery date: Yetkazish sanasi
+    Delivery time: Yetkazish vaqti
+    Recipient: Qabul qiluvchi
+    Card message: Tabriknoma matni
+  ru:
+    Bouquets: Букеты
+    Popular bouquets: Популярные букеты
+    What customers say: Отзывы клиентов
+    Fresh flowers, delivered today: Свежие цветы с доставкой сегодня
+    Hand-tied bouquets from Tashkent florists. Order before 14:00 for same-day delivery.: Букеты ручной работы от ташкентских флористов. Закажите до 14:00, и мы доставим в тот же день.
+    Shop bouquets: Выбрать букет
+    Same-day delivery: Доставка в день заказа
+    "Delivery is free from 500 000 UZS. We call before arriving and send a photo of your bouquet.": Доставка бесплатна от 500 000 сумов. Мы позвоним перед приездом и пришлём фото букета.
+    Questions? Write to us: Есть вопросы? Напишите нам
+    We reply within an hour during opening times.: В рабочее время отвечаем в течение часа.
+    Delivery date: Дата доставки
+    Delivery time: Время доставки
+    Recipient: Получатель
+    Card message: Текст открытки
 
 entities:
   - name: category
@@ -60,7 +92,7 @@ commerce:
   price: price
   stock: stock
   active: available
-  payments: [cash]
+  payments: [cash, click, payme]
   delivery: { fee: 30000, freeFrom: 500000 }
   orderFields:
     - { name: delivery_date, type: date, required: true }

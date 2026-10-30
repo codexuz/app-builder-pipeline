@@ -1,0 +1,99 @@
+# Jewellery shop (style luxury): few pieces, each treated like an object in a case.
+# Sizes are options with their own stock; each piece keeps its certificate as a file; texts are written per language.
+app:
+  name: Zarafshon Zargarlik
+  slug: zarafshon-jewellery
+  description: Handmade gold and silver jewellery from a family workshop in Bukhara.
+  type: business
+  style: luxury
+  color: amber
+  appId: uz.zarafshon.jewellery
+  currency: UZS
+
+translations:
+  uz:
+    Handmade gold and silver jewellery from a family workshop in Bukhara.: Buxorodagi oilaviy ustaxonadan qoʻlda yasalgan oltin va kumush buyumlar.
+    Pieces: Buyumlar
+    Piece: Buyum
+    Metal: Metall
+    Purity: Proba
+    Gold: Oltin
+    Silver: Kumush
+    Stone: Tosh
+    Handmade in Bukhara: Buxoroda qoʻlda yasalgan
+    Rings, earrings and necklaces made to order by our family workshop.: Oilaviy ustaxonamizda buyurtma asosida yasaladigan uzuk, zirak va marjonlar.
+    See the collection: Toʻplamni koʻrish
+    Collection: Toʻplam
+  ru:
+    Handmade gold and silver jewellery from a family workshop in Bukhara.: Золото и серебро ручной работы из семейной мастерской в Бухаре.
+    Pieces: Изделия
+    Piece: Изделие
+    Metal: Металл
+    Purity: Проба
+    Gold: Золото
+    Silver: Серебро
+    Stone: Камень
+    Handmade in Bukhara: Ручная работа из Бухары
+    Rings, earrings and necklaces made to order by our family workshop.: Кольца, серьги и колье на заказ от нашей семейной мастерской.
+    See the collection: Смотреть коллекцию
+    Collection: Коллекция
+
+entities:
+  - name: piece
+    icon: i-lucide-gem
+    access: public
+    attachments: true
+    sort: { field: name, dir: asc }
+    fields:
+      - { name: name, type: text, required: true, translate: true }
+      - { name: price, type: money, required: true, min: 0 }
+      - { name: metal, type: enum, options: [gold, silver], default: gold, required: true }
+      - { name: purity, type: text, max: 20, help: For example 585 or 925 }
+      - { name: stone, type: text, max: 80 }
+      - { name: description, type: longtext, translate: true }
+      - { name: stock, type: integer, required: true, default: 0, min: 0 }
+      - { name: available, type: boolean, default: true }
+
+  - name: supplier_cost
+    label: Cost record
+    icon: i-lucide-receipt
+    fields:
+      - { name: piece_id, type: relation, to: piece, required: true, cascade: true, label: Piece }
+      - { name: cost, type: money, required: true, min: 0 }
+      - { name: note, type: text }
+
+  - name: inquiry
+    plural: Messages
+    icon: i-lucide-mail
+    access: inbox
+    title: name
+    fields:
+      - { name: name, type: text, required: true, max: 120 }
+      - { name: phone, type: phone, required: true }
+      - { name: message, type: longtext, required: true, max: 2000, list: true }
+      - { name: status, type: enum, options: [new, answered], default: new, required: true, staff: true }
+
+commerce:
+  product: piece
+  price: price
+  stock: stock
+  active: available
+  payments: [cash, click, payme]
+  variants: true
+  variantLabel: Size
+  delivery: { fee: 0 }
+  orderFields:
+    - { name: engraving, type: text, max: 40 }
+
+site:
+  hero:
+    title: Handmade in Bukhara
+    subtitle: Rings, earrings and necklaces made to order by our family workshop.
+    cta: { label: See the collection, to: /pieces }
+  sections:
+    - { type: entity, entity: piece, title: Collection, limit: 6 }
+    - { type: form, entity: inquiry, title: Contact }
+  contact:
+    phone: "+998 65 221 00 00"
+    address: Bukhara, Khoja Nurobobod street 7
+    hours: Mon to Sat, 10:00 to 19:00

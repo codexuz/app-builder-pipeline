@@ -1,0 +1,17 @@
+/* fresh: Rishtan ceramics. Glaze white, ishkor turquoise, cobalt; products sit on round plates. */
+:root {
+  --ion-font-family: "Nunito", system-ui, sans-serif;
+  --font-display: "Yeseva One", "Nunito", serif;
+  --ion-background-color: #f3fbfb;
+  --ion-text-color: #12324f;
+  --ion-toolbar-background: #dff3f3;
+  --ion-toolbar-color: #0b2a6b;
+  --ion-item-background: #f3fbfb;
+  --ion-border-color: #c6e6e6;
+  --card-radius: 18px;
+  --image-radius: 50%;
+}
+.hero { background: #dff3f3; }
+.hero-title { color: #0b2a6b; }
+.shop-image { margin: 12px; box-shadow: 0 0 0 4px #fff, 0 0 0 6px #0e8c99; }
+.shop-card { text-align: center; }

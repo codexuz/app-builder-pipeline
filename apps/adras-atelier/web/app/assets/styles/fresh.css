@@ -1,0 +1,43 @@
+/* fresh: Rishtan ceramics. Ishkor turquoise and cobalt on white glaze; every product sits on a round plate. */
+html[data-style="fresh"], html[data-style="fresh"].dark {
+  --font-sans: "Nunito", system-ui, sans-serif;
+  --font-display: "Yeseva One", "Nunito", serif;
+  --display-weight: 400;
+  --display-tracking: 0;
+  --display-case: none;
+  --ui-bg: #f3fbfb;
+  --ui-bg-elevated: #dff3f3;
+  --ui-text: #12324f;
+  --ui-text-highlighted: #0b2a6b;
+  --ui-text-muted: #3f5f78;
+  --ui-text-dimmed: #5e7c92;
+  --ui-border: #c6e6e6;
+  --ui-border-accented: #8fcfd1;
+  --ui-primary: var(--ui-color-primary-600);
+  --ui-radius: 1rem;
+  --media-radius: 50%;
+  --media-ground: #ffffff;
+  --plate-rim: #0e8c99;
+  --plate-petal: #0b2a6b;
+  --plate-dot: #f3fbfb;
+  --cols-sm: 2;
+  --cols-md: 3;
+  --cols-lg: 4;
+  --grid-gap: 2rem 1.25rem;
+  --footer-ground: #0b2a6b;
+  --footer-ink: #bcd9e6;
+  --footer-strong: #7fe0dd;
+  --hero-ink: #0b2a6b;
+}
+
+[data-style="fresh"] .site-brand { font-size: 1.5rem; }
+[data-style="fresh"] .site-hero { background: #dff3f3; }
+[data-style="fresh"] .site-hero__inner { display: grid; gap: 2rem; align-items: center; }
+@media (min-width: 56rem) { [data-style="fresh"] .site-hero__inner { grid-template-columns: 1.1fr 0.9fr; } }
+[data-style="fresh"] .hero-plate { position: relative; width: min(100%, 26rem); aspect-ratio: 1; margin-inline: auto; }
+[data-style="fresh"] .hero-plate .motif { position: absolute; inset: 0; }
+[data-style="fresh"] .hero-plate img { position: absolute; inset: 15.5%; width: 69%; height: 69%; border-radius: 50%; object-fit: cover; }
+[data-style="fresh"] .rec { text-align: center; }
+[data-style="fresh"] .rec__body { align-items: center; }
+[data-style="fresh"] .rec__media { box-shadow: 0 0 0 6px #fff, 0 0 0 8px var(--plate-rim), 0 10px 24px -14px rgb(11 42 107 / 0.5); margin: 8px; }
+[data-style="fresh"] .rec__title { font-family: var(--font-display); font-size: 1.0625rem; }

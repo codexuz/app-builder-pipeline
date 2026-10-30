@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { app } from '#core/schema'
+import { app, scheduling } from '#core/schema'
 import { editableFields, type EntityMeta, type Row } from '#core/utils/meta'
 
 // What customers and visitors fill in: a contact message, a booking, a review.
@@ -10,7 +10,7 @@ const emit = defineEmits<{ saved: [row: Row | null] }>()
 const { user } = useAuth()
 const { canAsCustomer } = usePermissions()
 const records = useRecords(props.entity)
-const { targetOrg } = useShop()
+const { targetOrg, loadBusinessOrg } = useShop()
 const toast = useToast()
 const route = useRoute()
 
@@ -20,8 +20,13 @@ const blank = () => reactive<Record<string, any>>(newFormState(props.entity, use
 const state = ref(blank())
 const saving = ref(false)
 const sent = ref(false)
+// Real people never see this field; bots fill it in, and their message is quietly dropped.
+const honeypot = ref('')
 const needsAccount = computed(() => !canAsCustomer(props.entity, 'create'))
-const presetNames = new Set(Object.keys(props.preset ?? {}))
+
+const slotted = scheduling?.entity === props.entity.name ? scheduling : null
+const org = ref<string | null>(null)
+onMounted(async () => { if (slotted) org.value = await loadBusinessOrg() })
 
 // In a marketplace a record goes to the seller of whatever it is about.
 async function destination() {
@@ -34,20 +39,21 @@ async function destination() {
 }
 
 async function onSubmit() {
+  if (honeypot.value) { sent.value = true; return }
   saving.value = true
   try {
-    const org = await destination()
+    const target = await destination()
     const payload = formStateToPayload(props.entity, state.value, fields)
     if (props.entity.access === 'inbox') {
-      await records.submit(payload, org)
+      await records.submit(payload, target)
       sent.value = true
       state.value = blank()
       emit('saved', null)
     } else {
-      emit('saved', await records.create(payload, org))
+      emit('saved', await records.create(payload, target))
     }
   } catch (err) {
-    toast.add({ title: 'Could not send', description: friendlyError(err, props.entity), color: 'error', icon: 'i-lucide-circle-alert' })
+    toast.add({ title: t('form.failed'), description: friendlyError(err, props.entity), color: 'error', icon: 'i-lucide-circle-alert' })
   } finally {
     saving.value = false
   }
@@ -61,35 +67,45 @@ async function onSubmit() {
       color="success"
       variant="subtle"
       icon="i-lucide-circle-check"
-      title="Thank you, we received your message"
-      description="We will get back to you soon."
-      :actions="[{ label: 'Send another', onClick: () => { sent = false } }]"
+      :title="t('form.sent')"
+      :description="t('form.sentNote')"
+      :actions="[{ label: t('form.again'), onClick: () => { sent = false } }]"
     />
     <UAlert
       v-else-if="needsAccount"
       color="neutral"
       variant="subtle"
       icon="i-lucide-user"
-      title="Sign in to continue"
-      description="You need an account so you can follow this later."
-      :actions="[{ label: 'Sign in', to: { path: '/login', query: { redirect: route.fullPath } } }]"
+      :title="t('form.signInFirst')"
+      :description="t('form.signInNote')"
+      :actions="[{ label: t('auth.signIn'), to: { path: '/login', query: { redirect: route.fullPath } } }]"
     />
     <UForm v-else :schema="schema" :state="state" class="space-y-5" @submit="onSubmit">
+      <div class="absolute -left-[9999px]" aria-hidden="true">
+        <label>Website <input v-model="honeypot" type="text" tabindex="-1" autocomplete="off"></label>
+      </div>
       <div class="grid gap-x-6 gap-y-5 sm:grid-cols-2">
         <template v-for="f in fields" :key="f.name">
           <UFormField
-            v-if="!presetNames.has(f.name)"
             :name="f.name"
-            :label="f.label"
-            :description="f.help"
+            :label="tl(f.label)"
+            :description="f.help ? tl(f.help) : undefined"
             :required="f.required"
-            :class="['longtext', 'json', 'tags'].includes(f.type) ? 'sm:col-span-2' : ''"
+            :class="['longtext', 'json', 'tags'].includes(f.type) || f.name === slotted?.start ? 'sm:col-span-2' : ''"
           >
-            <EntityFieldInput v-model="state[f.name]" :field="f" site />
+            <SiteSlotPicker
+              v-if="f.name === slotted?.start"
+              v-model="state[f.name]"
+              :org="org"
+              :service="slotted.service ? state[slotted.service] : undefined"
+              :resource="slotted.resource ? state[slotted.resource] : undefined"
+              :needs-service="Boolean(slotted.service)"
+            />
+            <EntityFieldInput v-else v-model="state[f.name]" :field="f" site />
           </UFormField>
         </template>
       </div>
-      <UButton type="submit" :label="entity.access === 'inbox' ? 'Send' : `Submit ${entity.label.toLowerCase()}`" :loading="saving" />
+      <UButton type="submit" size="lg" :label="entity.access === 'inbox' ? t('form.send') : t('form.submit')" :loading="saving" />
     </UForm>
     <template #fallback>
       <USkeleton class="h-48 w-full" />

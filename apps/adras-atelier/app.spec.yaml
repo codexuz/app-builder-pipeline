@@ -1,0 +1,67 @@
+# Clothing brand (style fashion): big photographs and bold type. Sizes are options with their own stock.
+app:
+  name: Adras Atelier
+  slug: adras-atelier
+  description: Modern clothes cut from hand-woven Uzbek adras.
+  type: business
+  style: fashion
+  color: pink
+  appId: uz.adras.atelier
+  currency: UZS
+
+translations:
+  uz:
+    Modern clothes cut from hand-woven Uzbek adras.: Oʻzbek adrasidan tikilgan zamonaviy kiyimlar.
+    Clothes: Kiyimlar
+    Garment: Kiyim
+    Dress: Koʻylak
+    Jacket: Kurtka
+    Coat: Palto
+    Woven by hand: Qoʻlda toʻqilgan
+    New collection: Yangi toʻplam
+    See the collection: Toʻplamni koʻrish
+  ru:
+    Modern clothes cut from hand-woven Uzbek adras.: Современная одежда из узбекского адраса.
+    Clothes: Одежда
+    Garment: Изделие
+    Dress: Платье
+    Jacket: Жакет
+    Coat: Пальто
+    Woven by hand: Сотканное вручную
+    New collection: Новая коллекция
+    See the collection: Смотреть коллекцию
+
+entities:
+  - name: garment
+    plural: Clothes
+    icon: i-lucide-shirt
+    access: public
+    attachments: true
+    fields:
+      - { name: name, type: text, required: true, translate: true }
+      - { name: price, type: money, required: true, min: 0 }
+      - { name: kind, type: enum, options: [dress, jacket, coat], default: dress, required: true }
+      - { name: description, type: longtext, translate: true }
+      - { name: stock, type: integer, required: true, default: 0, min: 0 }
+      - { name: available, type: boolean, default: true }
+
+commerce:
+  product: garment
+  price: price
+  stock: stock
+  active: available
+  payments: [cash, click, payme]
+  variants: true
+  variantLabel: Size
+  delivery: { fee: 25000, freeFrom: 1000000 }
+
+site:
+  hero:
+    title: Woven by hand
+    subtitle: Modern clothes cut from hand-woven Uzbek adras.
+    cta: { label: See the collection, to: /clothes }
+  sections:
+    - { type: entity, entity: garment, title: New collection, limit: 6 }
+  contact:
+    telegram: adras_atelier
+    instagram: adras.atelier

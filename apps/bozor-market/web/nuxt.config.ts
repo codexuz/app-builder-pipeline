@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs'
 
 // Icons named in app.spec.yaml (entity and dashboard icons), written by the generator.
 const specIcons: string[] = JSON.parse(readFileSync(new URL('../shared/icons.json', import.meta.url), 'utf8'))
+// The app's style word: only that stylesheet, and so only its fonts, ship.
+const { style } = JSON.parse(readFileSync(new URL('../shared/app.json', import.meta.url), 'utf8')) as { style: string }
 
 // Web app: public site and shop rendered on the server (search engines, link previews) plus the staff area in /app.
 // Deployed to Vercel. Data, auth and permissions come from @app-pipeline/core.
@@ -24,7 +26,7 @@ export default defineNuxtConfig({
   },
 
   devtools: { enabled: false },
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css', `~/assets/styles/${style}.css`],
   compatibilityDate: '2025-07-15',
 
   app: {

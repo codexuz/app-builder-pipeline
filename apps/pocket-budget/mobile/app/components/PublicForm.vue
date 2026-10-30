@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { app } from '#core/schema'
+import { app, scheduling } from '#core/schema'
 import { editableFields, type EntityMeta, type Row } from '#core/utils/meta'
 
 // What customers and visitors fill in: a contact message, a booking, a review.
@@ -10,11 +10,10 @@ const emit = defineEmits<{ saved: [row: Row | null] }>()
 const { user } = useAuth()
 const { canAsCustomer } = usePermissions()
 const records = useRecords(props.entity)
-const { targetOrg } = useShop()
+const { targetOrg, loadBusinessOrg } = useShop()
 const notify = useNotify()
 
 const fields = editableFields(props.entity, false)
-const shown = fields.filter(f => props.preset?.[f.name] === undefined)
 const schema = formSchema(props.entity, fields)
 const blank = () => newFormState(props.entity, user.value?.id, props.preset)
 const state = ref<Record<string, any>>(blank())
@@ -22,6 +21,10 @@ const errors = ref<Record<string, string>>({})
 const saving = ref(false)
 const sent = ref(false)
 const needsAccount = computed(() => !canAsCustomer(props.entity, 'create'))
+const honeypot = ref('')
+const slotted = scheduling?.entity === props.entity.name ? scheduling : null
+const org = ref<string | null>(null)
+onMounted(async () => { if (slotted) org.value = await loadBusinessOrg() })
 
 // In a marketplace a record goes to the seller of whatever it is about.
 async function destination() {
@@ -34,11 +37,12 @@ async function destination() {
 }
 
 async function submit() {
+  if (honeypot.value) { sent.value = true; return }
   const parsed = schema.safeParse(state.value)
   errors.value = {}
   if (!parsed.success) {
     for (const issue of parsed.error.issues) errors.value[String(issue.path[0])] ??= issue.message
-    return notify.toast('Check the highlighted fields', 'danger')
+    return notify.toast(t('e.value'), 'danger')
   }
   saving.value = true
   try {
@@ -53,7 +57,7 @@ async function submit() {
       emit('saved', await records.create(payload, org))
     }
   } catch (err) {
-    await notify.error('Could not send', err)
+    await notify.error(t('form.failed'), err)
   } finally {
     saving.value = false
   }
@@ -63,21 +67,34 @@ async function submit() {
 <template>
   <div v-if="sent" class="empty-state">
     <Icon name="i-lucide-circle-check" />
-    <p>Thank you, we received your message.</p>
-    <ion-button fill="clear" @click="sent = false">Send another</ion-button>
+    <p>{{ t('form.sent') }}</p>
+    <ion-button fill="clear" @click="sent = false">{{ t('form.again') }}</ion-button>
   </div>
   <div v-else-if="needsAccount" class="empty-state">
     <Icon name="i-lucide-user" />
-    <p>Sign in so you can follow this later.</p>
-    <ion-button :router-link="loginPath">Sign in</ion-button>
+    <p>{{ t('form.signInNote') }}</p>
+    <ion-button :router-link="loginPath">{{ t('auth.signIn') }}</ion-button>
   </div>
   <form v-else @submit.prevent="submit">
     <ion-list>
-      <FieldInput v-for="f in shown" :key="f.name" v-model="state[f.name]" :field="f" :error="errors[f.name]" site />
+      <template v-for="f in fields" :key="f.name">
+        <SlotPicker
+          v-if="f.name === slotted?.start"
+          v-model="state[f.name]"
+          :label="tl(f.label)"
+          :error="errors[f.name]"
+          :org="org"
+          :service="slotted.service ? state[slotted.service] : undefined"
+          :resource="slotted.resource ? state[slotted.resource] : undefined"
+          :needs-service="Boolean(slotted.service)"
+        />
+        <FieldInput v-else v-model="state[f.name]" :field="f" :error="errors[f.name]" site />
+      </template>
+      <input v-model="honeypot" type="text" tabindex="-1" autocomplete="off" aria-hidden="true" style="position: absolute; left: -9999px">
     </ion-list>
     <div class="ion-padding">
       <ion-button type="submit" expand="block" :disabled="saving">
-        {{ entity.access === 'inbox' ? 'Send' : `Submit ${entity.label.toLowerCase()}` }}
+        {{ entity.access === 'inbox' ? t('form.send') : t('form.submit') }}
       </ion-button>
     </div>
   </form>

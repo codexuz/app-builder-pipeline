@@ -1,0 +1,7 @@
+{
+  "name": "@adras-atelier/shared",
+  "private": true,
+  "type": "module",
+  "description": "Generated schema for Adras Atelier, shared by its web and mobile apps.",
+  "main": "./schema.ts"
+}

@@ -20,7 +20,7 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "typecheck": "turbo run typecheck",
-    "test": "tsx packages/pipeline/cli.ts verify-db specs/examples/crm.yaml && tsx packages/pipeline/cli.ts verify-db specs/examples/budget.yaml && tsx packages/pipeline/cli.ts verify-db specs/examples/social.yaml && tsx packages/pipeline/cli.ts verify-db specs/examples/flower-shop.yaml && tsx packages/pipeline/cli.ts verify-db specs/examples/marketplace.yaml && tsx packages/pipeline/cli.ts verify-db specs/examples/salon.yaml"
+    "test": "for s in specs/examples/*.yaml; do tsx packages/pipeline/cli.ts verify-db $s || exit 1; done"
   },
   "devDependencies": {
     "turbo": "^2.11.10"

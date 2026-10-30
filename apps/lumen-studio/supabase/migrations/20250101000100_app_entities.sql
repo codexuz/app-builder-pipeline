@@ -57,15 +57,14 @@ create table public.booking (
   org_id uuid not null references public.organizations(id) on delete cascade,
   service_id uuid not null,
   specialist_id uuid,
-  date date not null,
-  time text not null,
+  starts_at timestamptz not null,
   phone text not null,
   note text,
   status text not null default 'requested',
+  ends_at timestamptz,
   created_by uuid default auth.uid(),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint booking_time_chk check (time in ('09:00', '10:00', '11:00', '12:00', '14:00', '15:00', '16:00', '17:00', '18:00')),
   constraint booking_phone_req check (char_length(btrim(phone)) > 0),
   constraint booking_phone_len check (char_length(phone) <= 40),
   constraint booking_note_len check (char_length(note) <= 500),
@@ -143,7 +142,7 @@ create index booking_service_id_idx on public.booking (service_id);
 
 create index booking_specialist_id_idx on public.booking (specialist_id);
 
-create index booking_sort_idx on public.booking (org_id, date);
+create index booking_sort_idx on public.booking (org_id, starts_at);
 
 create index testimonial_org_idx on public.testimonial (org_id, created_at desc);
 
@@ -230,11 +229,18 @@ begin
   if current_user in ('anon', 'authenticated') and not public.has_org_role(new.org_id, 'viewer') then
     if tg_op = 'INSERT' then new.status := 'requested'; else new.status := old.status; end if;
   end if;
+  -- Ends: set only by database functions
+  if current_user in ('anon', 'authenticated') then
+    if tg_op = 'INSERT' then new.ends_at := null; else new.ends_at := old.ends_at; end if;
+  end if;
   if new.service_id is not null and not exists (select 1 from public.service where id = new.service_id) then
     raise exception 'Service must point to a service you can access' using errcode = '23503';
   end if;
   if new.specialist_id is not null and not exists (select 1 from public.specialist where id = new.specialist_id) then
     raise exception 'Specialist must point to a specialist you can access' using errcode = '23503';
+  end if;
+  if tg_op = 'INSERT' and current_user in ('anon', 'authenticated') and not public.has_org_role(new.org_id, 'viewer') then
+    perform public.limit_submissions('booking', 'customer');
   end if;
   return new;
 end $$;
@@ -261,7 +267,9 @@ begin
   else
     new.created_by := coalesce(auth.uid(), new.created_by);
   end if;
-
+  if tg_op = 'INSERT' and current_user in ('anon', 'authenticated') and not public.has_org_role(new.org_id, 'viewer') then
+    perform public.limit_submissions('testimonial', 'customer');
+  end if;
   return new;
 end $$;
 
@@ -290,6 +298,9 @@ begin
   -- Status: set only by staff
   if current_user in ('anon', 'authenticated') and not public.has_org_role(new.org_id, 'viewer') then
     if tg_op = 'INSERT' then new.status := 'new'; else new.status := old.status; end if;
+  end if;
+  if tg_op = 'INSERT' and current_user in ('anon', 'authenticated') and not public.has_org_role(new.org_id, 'viewer') then
+    perform public.limit_submissions('inquiry', 'inbox');
   end if;
   return new;
 end $$;
@@ -364,6 +375,83 @@ returns boolean language sql stable security definer set search_path = '' as $$
     or exists (select 1 from public.testimonial where created_by = p_user and public.has_org_role(org_id, 'viewer'))
 $$;
 create policy profiles_select_customers on public.profiles for select to authenticated using (public.is_customer_of_mine(id));
+
+-- Time slots --------------------------------------------------
+create or replace function public.booking_schedule()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_org uuid := new.org_id;
+  v_local timestamp := new.starts_at at time zone 'Asia/Tashkent';
+  v_minutes int := (select duration_minutes from public.service where id = new.service_id);
+begin
+  if tg_op = 'UPDATE' and new.starts_at = old.starts_at and old.status not in ('cancelled') = new.status not in ('cancelled') and new.specialist_id is not distinct from old.specialist_id then
+    new.ends_at := old.ends_at;
+    return new;
+  end if;
+  new.ends_at := new.starts_at + make_interval(mins => v_minutes);
+  if not (new.status not in ('cancelled')) then
+    return new;
+  end if;
+  if tg_op = 'INSERT' and new.starts_at < now() then
+    raise exception 'Please choose a time in the future' using errcode = 'P0001';
+  end if;
+  if v_local::time < '09:00'::time or (new.ends_at at time zone 'Asia/Tashkent')::time > '19:00'::time
+    or (new.ends_at at time zone 'Asia/Tashkent')::date <> v_local::date then
+    raise exception 'We are open from 09:00 to 19:00' using errcode = 'P0001';
+  end if;
+  if extract(dow from v_local)::int in (1) then
+    raise exception 'We are closed on this day' using errcode = 'P0001';
+  end if;
+  -- One booking at a time per workspace, so two people can never take the same slot.
+  perform pg_advisory_xact_lock(hashtextextended(v_org::text, 0));
+  if new.specialist_id is null then
+    select r.id into new.specialist_id from public.specialist r
+    where r.org_id = new.org_id and not exists (select 1 from public.booking b where b.org_id = v_org and b.status not in ('cancelled') and b.starts_at < new.ends_at and b.ends_at > new.starts_at and b.specialist_id = r.id and b.id <> new.id)
+    order by r.created_at limit 1;
+    if new.specialist_id is null and exists (select 1 from public.specialist where org_id = new.org_id) then
+      raise exception 'This time is fully booked. Please choose another.' using errcode = 'P0001';
+    end if;
+  end if;
+  if exists (select 1 from public.booking b where b.org_id = v_org and b.status not in ('cancelled') and b.starts_at < new.ends_at and b.ends_at > new.starts_at and b.specialist_id is not distinct from new.specialist_id and b.id <> new.id) then
+    raise exception 'This time was just booked. Please choose another.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+
+create trigger booking_schedule before insert or update on public.booking
+  for each row execute function public.booking_schedule();
+
+-- Starting times still free on one day, in the business's timezone. Reveals availability, never who booked.
+create or replace function public.free_slots(p_org uuid, p_day date, p_service uuid, p_resource uuid default null)
+returns setof timestamptz language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_org uuid := p_org;
+  v_minutes int := (select duration_minutes from public.service where id = p_service);
+  v_slot timestamptz;
+  v_end timestamptz;
+begin
+  if v_minutes is null then return; end if;
+  if extract(dow from p_day)::int in (1) then return; end if;
+  for v_slot in
+    select g at time zone 'Asia/Tashkent'
+    from generate_series((p_day + '09:00'::time)::timestamp, (p_day + '19:00'::time)::timestamp - make_interval(mins => v_minutes), make_interval(mins => 30)) g
+  loop
+    v_end := v_slot + make_interval(mins => v_minutes);
+    continue when v_slot <= now();
+    if p_resource is not null then
+      continue when exists (select 1 from public.booking b where b.org_id = v_org and b.status not in ('cancelled') and b.starts_at < v_end and b.ends_at > v_slot and b.specialist_id = p_resource);
+    elsif exists (select 1 from public.specialist where org_id = v_org) then
+      continue when not exists (
+        select 1 from public.specialist r
+        where r.org_id = v_org and not exists (select 1 from public.booking b where b.org_id = v_org and b.status not in ('cancelled') and b.starts_at < v_end and b.ends_at > v_slot and b.specialist_id = r.id)
+      );
+    else
+      continue when exists (select 1 from public.booking b where b.org_id = v_org and b.status not in ('cancelled') and b.starts_at < v_end and b.ends_at > v_slot);
+    end if;
+    return next v_slot;
+  end loop;
+end $$;
+grant execute on function public.free_slots to anon, authenticated;
 
 -- Realtime: lists refresh live when rows change.
 do $$

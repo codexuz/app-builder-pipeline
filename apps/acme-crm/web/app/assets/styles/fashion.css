@@ -1,0 +1,56 @@
+/* fashion: adras ikat. Dyed bands at full saturation, tall type, big photographs, sharp edges. */
+html[data-style="fashion"], html[data-style="fashion"].dark {
+  --font-sans: "Commissioner", system-ui, sans-serif;
+  --font-display: "Oswald", "Commissioner", sans-serif;
+  --display-weight: 600;
+  --display-tracking: 0.005em;
+  --display-case: uppercase;
+  --ui-bg: #ffffff;
+  --ui-bg-elevated: #f3eff2;
+  --ui-text: #1d1520;
+  --ui-text-highlighted: #120b16;
+  --ui-text-muted: #5f5564;
+  --ui-text-dimmed: #7d7382;
+  --ui-border: #e6e0e8;
+  --ui-border-accented: #120b16;
+  --ui-primary: #120b16;
+  --ui-radius: 0;
+  --chip-radius: 0;
+  --media-radius: 0;
+  --media-ratio: 3 / 4;
+  --ikat-ground: #2a0a3e;
+  --ikat-a: #e0115f;
+  --ikat-b: #0f9d76;
+  --ikat-c: #ffc20e;
+  --cols-sm: 2;
+  --cols-md: 2;
+  --cols-lg: 3;
+  --grid-gap: 2.5rem 1rem;
+  --footer-ground: #120b16;
+  --footer-ink: #bdb2c4;
+  --footer-strong: #ffc20e;
+  --hero-ink: #ffffff;
+  --hero-soft: #f1e6f5;
+}
+
+[data-style="fashion"] .site-header { border-bottom: 1px solid var(--ui-text-highlighted); }
+[data-style="fashion"] .site-brand { font-size: 1.625rem; }
+[data-style="fashion"] .site-nav a { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.875rem; }
+[data-style="fashion"] .site-hero { background: var(--ikat-ground); }
+[data-style="fashion"] .site-hero__inner { min-height: min(78vh, 44rem); display: flex; flex-direction: column; justify-content: flex-end; }
+[data-style="fashion"] .site-hero__title {
+  font-size: clamp(3rem, 11vw, 6rem);
+  line-height: 0.98;
+  max-width: 12ch;
+  /* A dyed field needs a solid block behind the type to stay readable. */
+  background: var(--ikat-ground);
+  padding: 0.75rem 1rem 0.5rem;
+  box-decoration-break: clone;
+}
+[data-style="fashion"] .site-hero__text { background: var(--ikat-ground); padding: 0.625rem 1rem; }
+[data-style="fashion"] .rec__title { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.03em; font-size: 1.0625rem; }
+[data-style="fashion"] .rec__price { font-weight: 500; font-size: 1rem; }
+[data-style="fashion"] .site-h2 { font-size: clamp(2rem, 5vw, 3.25rem); }
+
+[data-style="fashion"] .site-hero__cta { padding-inline-start: 1rem; }
+[data-style="fashion"] .site-hero__cta a { --ui-primary: #ffc20e; background: #ffc20e; color: #120b16; }

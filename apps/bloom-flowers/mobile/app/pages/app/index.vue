@@ -32,7 +32,7 @@ const recent = navEntities()[0]
 function tileValue(c: Card, i: number) {
   const v = Number(stats.value?.[`c${i}`] ?? 0)
   if (c.type === 'sum' && fieldOf(entityByName(c.entity)!, c.field)?.type === 'money') return formatMoney(v)
-  return new Intl.NumberFormat(app.locale).format(v)
+  return formatNumber(v)
 }
 
 function breakdownRows(c: Card, i: number) {

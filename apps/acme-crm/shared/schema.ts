@@ -7,9 +7,14 @@ export const app = {
   "color": "indigo",
   "appId": "com.acme.crm",
   "currency": "USD",
-  "locale": "en-US",
+  "languages": [
+    "uz",
+    "ru",
+    "en"
+  ],
   "publicProfiles": false,
-  "publicSite": false
+  "publicSite": false,
+  "style": "studio"
 }
 
 export const entities = [
@@ -29,6 +34,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -49,6 +55,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Industry",
         "list": true,
         "search": false
@@ -61,6 +68,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Website",
         "list": true,
         "search": false
@@ -73,6 +81,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Phone",
         "list": true,
         "search": true
@@ -86,6 +95,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Employees",
         "list": true,
         "search": false
@@ -98,11 +108,13 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Notes",
         "list": false,
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -148,6 +160,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Full name",
         "list": true,
         "search": true
@@ -160,6 +173,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Email",
         "list": true,
         "search": true
@@ -172,6 +186,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Phone",
         "list": true,
         "search": true
@@ -184,6 +199,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Job title",
         "list": true,
         "search": true
@@ -197,6 +213,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Company",
         "list": true,
         "search": false,
@@ -217,6 +234,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Status",
         "list": true,
         "search": false
@@ -231,12 +249,14 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false,
         "alias": "owner",
         "fk": "contact_owner_id_fkey"
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -278,6 +298,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Title",
         "list": true,
         "search": true
@@ -291,6 +312,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Company",
         "list": true,
         "search": false,
@@ -306,6 +328,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Contact",
         "list": true,
         "search": false,
@@ -321,6 +344,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Amount",
         "list": true,
         "search": false
@@ -341,6 +365,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Stage",
         "list": true,
         "search": false
@@ -353,6 +378,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Probability",
         "list": true,
         "search": false
@@ -365,6 +391,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Close date",
         "list": true,
         "search": false
@@ -379,12 +406,14 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false,
         "alias": "owner",
         "fk": "deal_owner_id_fkey"
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -426,6 +455,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Title",
         "list": true,
         "search": true
@@ -438,6 +468,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Due date",
         "list": true,
         "search": false
@@ -450,6 +481,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Done",
         "list": true,
         "search": false
@@ -468,6 +500,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Priority",
         "list": true,
         "search": false
@@ -481,6 +514,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Deal",
         "list": true,
         "search": false,
@@ -497,12 +531,14 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false,
         "alias": "assignee",
         "fk": "task_assignee_id_fkey"
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -590,7 +626,11 @@ export const dashboard = [
 
 export const commerce = null
 
+export const scheduling = null
+
 export const site = null
+
+export const translations = {}
 
 export interface Company {
   id: string

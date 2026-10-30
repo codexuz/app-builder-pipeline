@@ -35,6 +35,7 @@ function entityMeta(e: Entity) {
     title: e.title,
     description: e.description,
     fields: e.fields.map(({ cascade: _c, ...f }) => f),
+    builtIn: e.builtIn,
     permissions: e.permissions,
     access: e.access,
     own: e.own,
@@ -61,7 +62,11 @@ export const dashboard = ${json(spec.dashboard)}
 
 export const commerce = ${json(spec.commerce ?? null)}
 
+export const scheduling = ${json(spec.scheduling ?? null)}
+
 export const site = ${json(spec.site ?? null)}
+
+export const translations = ${json(spec.translations)}
 
 ${spec.entities.map(rowInterface).join('\n\n')}
 `
@@ -88,6 +93,7 @@ export function generateIcons(spec: NormalizedSpec): string {
 export function generateWebAppConfig(spec: NormalizedSpec): string {
   return `${HEADER}
 export default defineAppConfig({
+  style: '${spec.app.style}',
   ui: {
     colors: {
       primary: '${spec.app.color}',

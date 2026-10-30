@@ -1,8 +1,8 @@
 import { app, commerce } from '#core/schema'
 import { entityByName, recordTitle, type Row } from '#core/utils/meta'
 
-interface CartLine { id: string, qty: number }
-export interface CartItem { id: string, qty: number, title: string, price: number, stock?: number, cover?: string | null, seller?: string, product: Row }
+interface CartLine { id: string, qty: number, variant?: string }
+export interface CartItem { key: string, id: string, variant?: string, variantName?: string, qty: number, title: string, price: number, stock?: number, cover?: string | null, seller?: string, product: Row }
 
 const STORAGE_KEY = () => `${app.slug}:cart`
 
@@ -20,20 +20,21 @@ export function useCart() {
 
   const count = computed(() => lines.value.reduce((n, l) => n + l.qty, 0))
 
-  function add(id: string, qty = 1) {
-    const line = lines.value.find(l => l.id === id)
+  const keyOf = (l: { id: string, variant?: string }) => `${l.id}:${l.variant ?? ''}`
+  function add(id: string, qty = 1, variant?: string) {
+    const line = lines.value.find(l => keyOf(l) === keyOf({ id, variant }))
     if (line) line.qty = Math.min(999, line.qty + qty)
-    else lines.value.push({ id, qty })
+    else lines.value.push({ id, qty, variant })
     persist()
   }
-  function setQty(id: string, qty: number) {
-    if (qty < 1) return remove(id)
-    const line = lines.value.find(l => l.id === id)
+  function setQty(key: string, qty: number) {
+    if (qty < 1) return remove(key)
+    const line = lines.value.find(l => keyOf(l) === key)
     if (line) line.qty = Math.min(999, Math.floor(qty))
     persist()
   }
-  function remove(id: string) {
-    lines.value = lines.value.filter(l => l.id !== id)
+  function remove(key: string) {
+    lines.value = lines.value.filter(l => keyOf(l) !== key)
     persist()
   }
   function clear() {
@@ -46,24 +47,31 @@ export function useCart() {
     const shop = commerce
     if (!shop || !lines.value.length) return []
     const product = entityByName(shop.product)!
-    let q = useSupabase().from(product.name).select('*, seller:organizations(name)').in('id', lines.value.map(l => l.id))
+    const options = shop.variants ? ', variants:shop_variant(id, name, price, stock, active)' : ''
+    let q = useSupabase().from(product.name).select(`*, seller:organizations(name)${options}`).in('id', lines.value.map(l => l.id))
     if (shop.active) q = q.eq(shop.active, true)
     const { data, error } = await q
     if (error) throw error
     const rows = (data ?? []) as unknown as Row[]
     const found = new Set(rows.map(r => r.id))
-    if (lines.value.some(l => !found.has(l.id))) {
-      lines.value = lines.value.filter(l => found.has(l.id))
+    const optionOf = (l: CartLine) => (rows.find(r => r.id === l.id)?.variants as Row[] | undefined)?.find(v => v.id === l.variant)
+    const usable = (l: CartLine) => found.has(l.id) && (!l.variant || Boolean(optionOf(l)?.active))
+    if (lines.value.some(l => !usable(l))) {
+      lines.value = lines.value.filter(usable)
       persist()
     }
     return lines.value.map((l) => {
       const row = rows.find(r => r.id === l.id)!
+      const option = optionOf(l)
       return {
+        key: keyOf(l),
         id: l.id,
+        variant: l.variant,
+        variantName: option?.name,
         qty: l.qty,
         title: recordTitle(product, row),
-        price: Number(row[shop.price]),
-        stock: shop.stock ? Number(row[shop.stock]) : undefined,
+        price: Number(option?.price ?? row[shop.price]),
+        stock: !shop.stock ? undefined : Number(option ? option.stock : row[shop.stock]),
         cover: row.cover_url,
         seller: row.seller?.name,
         product: row
@@ -83,7 +91,7 @@ export function useCart() {
   // Returns the new order ids (one per seller in a marketplace).
   async function checkout(details: Record<string, unknown>): Promise<string[]> {
     const { data, error } = await useSupabase().rpc('place_order', {
-      p_items: lines.value.map(l => ({ product_id: l.id, quantity: l.qty })),
+      p_items: lines.value.map(l => ({ product_id: l.id, quantity: l.qty, ...(l.variant ? { variant_id: l.variant } : {}) })),
       p_details: details
     })
     if (error) throw error

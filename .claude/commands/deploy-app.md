@@ -17,3 +17,5 @@ Deploy `apps/$ARGUMENTS` (web to Vercel, mobile via Capacitor) following AGENTS.
    Configuration to the Vercel URL.
 5. Mobile: add `NUXT_PUBLIC_WEB_URL=<vercel url>` to `mobile/.env`, then in `apps/$ARGUMENTS/mobile`
    `npx cap add android` and `npm run android` (Android Studio needed); iOS needs a Mac (`npx cap add ios`, `npm run ios`).
+6. Online payments: only with the user's merchant accounts. Follow AGENTS.md stage 5, step 4, and run a sandbox payment
+   before going live.

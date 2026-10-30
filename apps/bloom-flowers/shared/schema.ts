@@ -4,10 +4,15 @@ export const app = {
   "slug": "bloom-flowers",
   "description": "Fresh bouquets delivered across Tashkent the same day.",
   "type": "business",
+  "style": "fresh",
   "color": "rose",
   "appId": "uz.bloom.flowers",
   "currency": "UZS",
-  "locale": "en-US",
+  "languages": [
+    "uz",
+    "ru",
+    "en"
+  ],
   "publicProfiles": false,
   "publicSite": true
 }
@@ -29,6 +34,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -41,11 +47,13 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Description",
         "list": false,
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -87,6 +95,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -100,6 +109,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Price",
         "list": true,
         "search": false
@@ -114,6 +124,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false,
         "alias": "category",
@@ -133,6 +144,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Size",
         "list": true,
         "search": false
@@ -145,6 +157,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Description",
         "list": false,
         "search": false
@@ -159,6 +172,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Stock",
         "list": true,
         "search": false
@@ -173,23 +187,26 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Available",
         "list": true,
         "search": false
       },
       {
-        "name": "cover_url",
-        "type": "url",
-        "label": "Cover image",
         "required": false,
         "unique": false,
         "list": false,
         "staff": true,
         "readonly": false,
         "auto": true,
+        "translate": false,
+        "name": "cover_url",
+        "type": "url",
+        "label": "Cover image",
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -237,6 +254,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false,
         "alias": "bouquet",
@@ -252,6 +270,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Rating",
         "list": true,
         "search": false
@@ -266,10 +285,12 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Comment",
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -309,6 +330,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -321,6 +343,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Phone",
         "list": true,
         "search": true
@@ -335,6 +358,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Message",
         "search": false
       },
@@ -351,11 +375,13 @@ export const entities = [
         "staff": true,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Status",
         "list": true,
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -390,6 +416,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "number",
         "type": "integer",
         "label": "Order #",
@@ -402,6 +429,7 @@ export const entities = [
         "staff": true,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "name": "status",
         "type": "enum",
         "options": [
@@ -423,10 +451,13 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "payment_method",
         "type": "enum",
         "options": [
-          "cash"
+          "cash",
+          "click",
+          "payme"
         ],
         "label": "Payment",
         "list": true,
@@ -438,6 +469,7 @@ export const entities = [
         "staff": true,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "name": "payment_status",
         "type": "enum",
         "options": [
@@ -456,6 +488,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "total",
         "type": "money",
         "label": "Total",
@@ -468,6 +501,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "customer_name",
         "type": "text",
         "label": "Customer",
@@ -480,6 +514,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "phone",
         "type": "phone",
         "label": "Phone",
@@ -492,6 +527,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "address",
         "type": "longtext",
         "list": false,
@@ -506,6 +542,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "label": "Delivery date",
         "list": true,
         "search": false
@@ -523,6 +560,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "label": "Delivery time",
         "list": true,
         "search": false
@@ -536,6 +574,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": true
       },
@@ -549,6 +588,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "list": false,
         "search": false
       },
@@ -558,6 +598,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "note",
         "type": "longtext",
         "list": false,
@@ -570,6 +611,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "subtotal",
         "type": "money",
         "list": false,
@@ -582,6 +624,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "delivery_fee",
         "type": "money",
         "list": false,
@@ -589,6 +632,7 @@ export const entities = [
         "search": false
       }
     ],
+    "builtIn": true,
     "permissions": {
       "read": "viewer",
       "create": "owner",
@@ -628,6 +672,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "order_id",
         "type": "relation",
         "to": "shop_order",
@@ -643,6 +688,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "product_id",
         "type": "relation",
         "to": "bouquet",
@@ -658,6 +704,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "title",
         "type": "text",
         "label": "Item",
@@ -670,6 +717,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "unit_price",
         "type": "money",
         "label": "Price",
@@ -682,6 +730,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "quantity",
         "type": "integer",
         "min": 1,
@@ -695,6 +744,7 @@ export const entities = [
         "staff": false,
         "readonly": true,
         "auto": false,
+        "translate": false,
         "name": "line_total",
         "type": "money",
         "label": "Total",
@@ -702,6 +752,7 @@ export const entities = [
         "search": false
       }
     ],
+    "builtIn": true,
     "permissions": {
       "read": "viewer",
       "create": "owner",
@@ -763,7 +814,9 @@ export const commerce = {
   "stock": "stock",
   "active": "available",
   "payments": [
-    "cash"
+    "cash",
+    "click",
+    "payme"
   ],
   "delivery": {
     "fee": 30000,
@@ -778,7 +831,8 @@ export const commerce = {
       "cascade": false,
       "staff": false,
       "readonly": false,
-      "auto": false
+      "auto": false,
+      "translate": false
     },
     {
       "name": "delivery_time",
@@ -793,7 +847,8 @@ export const commerce = {
       "cascade": false,
       "staff": false,
       "readonly": false,
-      "auto": false
+      "auto": false,
+      "translate": false
     },
     {
       "name": "recipient_name",
@@ -804,7 +859,8 @@ export const commerce = {
       "cascade": false,
       "staff": false,
       "readonly": false,
-      "auto": false
+      "auto": false,
+      "translate": false
     },
     {
       "name": "card_message",
@@ -816,10 +872,15 @@ export const commerce = {
       "max": 300,
       "staff": false,
       "readonly": false,
-      "auto": false
+      "auto": false,
+      "translate": false
     }
-  ]
+  ],
+  "variants": false,
+  "variantLabel": "Option"
 }
+
+export const scheduling = null
 
 export const site = {
   "hero": {
@@ -861,6 +922,41 @@ export const site = {
     "hours": "Every day 8:00 to 21:00",
     "telegram": "bloomflowers",
     "instagram": "bloom.flowers.uz"
+  }
+}
+
+export const translations = {
+  "uz": {
+    "Bouquets": "Guldastalar",
+    "Popular bouquets": "Mashhur guldastalar",
+    "What customers say": "Mijozlar fikri",
+    "Fresh flowers, delivered today": "Yangi gullar, bugunoq yetkaziladi",
+    "Hand-tied bouquets from Tashkent florists. Order before 14:00 for same-day delivery.": "Toshkent gulchilaridan qoʻlda bogʻlangan guldastalar. Soat 14:00 gacha buyurtma bering, shu kuni yetkazamiz.",
+    "Shop bouquets": "Guldasta tanlash",
+    "Same-day delivery": "Shu kuni yetkazib berish",
+    "Delivery is free from 500 000 UZS. We call before arriving and send a photo of your bouquet.": "500 000 soʻmdan boshlab yetkazib berish bepul. Yetib kelishdan oldin qoʻngʻiroq qilamiz va guldasta rasmini yuboramiz.",
+    "Questions? Write to us": "Savollaringiz bormi? Yozing",
+    "We reply within an hour during opening times.": "Ish vaqtida bir soat ichida javob beramiz.",
+    "Delivery date": "Yetkazish sanasi",
+    "Delivery time": "Yetkazish vaqti",
+    "Recipient": "Qabul qiluvchi",
+    "Card message": "Tabriknoma matni"
+  },
+  "ru": {
+    "Bouquets": "Букеты",
+    "Popular bouquets": "Популярные букеты",
+    "What customers say": "Отзывы клиентов",
+    "Fresh flowers, delivered today": "Свежие цветы с доставкой сегодня",
+    "Hand-tied bouquets from Tashkent florists. Order before 14:00 for same-day delivery.": "Букеты ручной работы от ташкентских флористов. Закажите до 14:00, и мы доставим в тот же день.",
+    "Shop bouquets": "Выбрать букет",
+    "Same-day delivery": "Доставка в день заказа",
+    "Delivery is free from 500 000 UZS. We call before arriving and send a photo of your bouquet.": "Доставка бесплатна от 500 000 сумов. Мы позвоним перед приездом и пришлём фото букета.",
+    "Questions? Write to us": "Есть вопросы? Напишите нам",
+    "We reply within an hour during opening times.": "В рабочее время отвечаем в течение часа.",
+    "Delivery date": "Дата доставки",
+    "Delivery time": "Время доставки",
+    "Recipient": "Получатель",
+    "Card message": "Текст открытки"
   }
 }
 

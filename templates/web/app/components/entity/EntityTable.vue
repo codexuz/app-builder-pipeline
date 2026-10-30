@@ -52,10 +52,10 @@ function sortHeader(label: string) {
 const columns = computed<TableColumn<Row>[]>(() => [
   ...listFields.value.map(f => ({
     accessorKey: f.name,
-    header: ['json', 'tags', 'relation', 'user'].includes(f.type) ? f.label : sortHeader(f.label),
+    header: ['json', 'tags', 'relation', 'user'].includes(f.type) ? tl(f.label) : sortHeader(tl(f.label)),
     enableSorting: !['json', 'tags', 'relation', 'user'].includes(f.type)
   })),
-  ...(props.compact ? [] : [{ accessorKey: 'updated_at', header: sortHeader('Updated') }]),
+  ...(props.compact ? [] : [{ accessorKey: 'updated_at', header: sortHeader(tl('Updated')) }]),
   { id: 'actions', header: '' }
 ])
 

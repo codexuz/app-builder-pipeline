@@ -25,11 +25,11 @@ useHead({ title: entity.plural })
     <ion-header>
       <ion-toolbar>
         <ion-buttons slot="start"><ion-menu-button /></ion-buttons>
-        <ion-title>{{ catalog ? entity.plural : `Your ${entity.plural.toLowerCase()}` }}</ion-title>
+        <ion-title>{{ catalog ? tl(entity.plural) : t('account.your', { name: tl(entity.plural).toLowerCase() }) }}</ion-title>
         <ion-buttons slot="end"><CartButton /></ion-buttons>
       </ion-toolbar>
       <ion-toolbar v-if="catalog">
-        <ion-searchbar v-model="search" :debounce="300" :placeholder="`Search ${entity.plural.toLowerCase()}`" />
+        <ion-searchbar v-model="search" :debounce="300" :placeholder="t('shop.searchIn', { name: tl(entity.plural) })" />
       </ion-toolbar>
     </ion-header>
     <ion-content>
@@ -41,14 +41,14 @@ useHead({ title: entity.plural })
       <template v-else-if="entity.access === 'customer'">
         <div v-if="!user" class="empty-state">
           <Icon :name="entity.icon" />
-          <p>Sign in to see your {{ entity.plural.toLowerCase() }}.</p>
-          <ion-button :router-link="`/login?redirect=/${entity.slug}`">Sign in</ion-button>
+          <p>{{ t('form.signInFirst') }}</p>
+          <ion-button :router-link="`/login?redirect=/${entity.slug}`">{{ t('auth.signIn') }}</ion-button>
         </div>
         <RecordList v-else ref="list" :entity="entity" scope="mine" :link-to="open" />
       </template>
       <div v-else class="empty-state">
         <Icon name="i-lucide-search-x" />
-        <p>This page does not exist.</p>
+        <p>{{ t('form.notFound') }}</p>
       </div>
 
       <ion-fab v-if="isSubmittable(entity) && entity.access === 'customer'" slot="fixed" vertical="bottom" horizontal="end">

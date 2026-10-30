@@ -148,6 +148,13 @@ function guardSql(e: Entity, spec: NormalizedSpec): string {
     return []
   })
 
+  // Public forms are rate limited per sender and per hour; staff are not.
+  const spamRule = e.access === 'inbox' || (e.access === 'customer' && !e.createdByFunction)
+    ? [`  if tg_op = 'INSERT' and ${CLIENT} and ${notStaff} then
+    perform public.limit_submissions('${t}', '${e.access}');
+  end if;`]
+    : []
+
   // Security invoker on purpose: current_user must be the app's role (anon/authenticated) for field rules,
   // and the database owner when checkout or other definer functions write. Lookups then follow RLS too.
   return `create or replace function public.${t}_guard()
@@ -165,7 +172,7 @@ begin
   else
     new.created_by := coalesce(auth.uid(), new.created_by);
   end if;
-${[...fieldRules, ...refChecks].join('\n')}
+${[...fieldRules, ...refChecks, ...spamRule].join('\n')}
   return new;
 end $$;
 
@@ -341,11 +348,68 @@ function commerceSql(spec: NormalizedSpec): string {
       end if;`
     : ''
   const activeFilter = c.active ? ` and p.${c.active}` : ''
-  const restock = c.stock
-    ? `  update ${p} pr set ${c.stock} = pr.${c.stock} + i.quantity
+  const restock = !c.stock
+    ? '  null;'
+    : c.variants
+      ? `  update ${p} pr set ${c.stock} = pr.${c.stock} + i.quantity
+  from public.shop_order_item i
+  where i.order_id = new.id and i.product_id = pr.id and i.variant_id is null;
+  update public.shop_variant v set stock = v.stock + i.quantity
+  from public.shop_order_item i
+  where i.order_id = new.id and i.variant_id = v.id;`
+      : `  update ${p} pr set ${c.stock} = pr.${c.stock} + i.quantity
   from public.shop_order_item i
   where i.order_id = new.id and i.product_id = pr.id;`
-    : '  null;'
+  const recordset = c.variants ? 'i(product_id uuid, variant_id uuid, quantity int)' : 'i(product_id uuid, quantity int)'
+  const variantChecks = c.variants
+    ? `  -- Products with options must be ordered as one of their available options.
+  if exists (
+    select 1 from jsonb_to_recordset(p_items) as ${recordset}
+    join public.shop_variant v on v.product_id = i.product_id and v.active
+    where i.variant_id is null
+  ) then
+    raise exception 'Choose an option for every item' using errcode = 'P0001';
+  end if;
+  if exists (
+    select 1 from jsonb_to_recordset(p_items) as ${recordset}
+    where i.variant_id is not null and not exists (
+      select 1 from public.shop_variant v where v.id = i.variant_id and v.product_id = i.product_id and v.active
+    )
+  ) then
+    raise exception 'Some options in your cart are no longer available' using errcode = 'P0001';
+  end if;
+`
+    : ''
+  const lineQuery = c.variants
+    ? `select p.id, v.id as variant_id, p.${titleCol} as title, v.name as variant_name,
+        coalesce(v.price, p.${c.price}) as price, sum(i.quantity)::int as qty
+      from jsonb_to_recordset(p_items) as ${recordset}
+      join ${p} p on p.id = i.product_id
+      left join public.shop_variant v on v.id = i.variant_id
+      where p.org_id = v_org
+      group by p.id, v.id, p.${titleCol}, v.name, v.price, p.${c.price}`
+    : `select p.id, p.${titleCol} as title, p.${c.price} as price, sum(i.quantity)::int as qty
+      from jsonb_to_recordset(p_items) as ${recordset}
+      join ${p} p on p.id = i.product_id
+      where p.org_id = v_org
+      group by p.id, p.${titleCol}, p.${c.price}`
+  const reserve = !c.stock
+    ? ''
+    : c.variants
+      ? `      if v_line.variant_id is not null then
+        update public.shop_variant set stock = stock - v_line.qty where id = v_line.variant_id and stock >= v_line.qty;
+      else
+        update ${p} set ${c.stock} = ${c.stock} - v_line.qty where id = v_line.id and ${c.stock} >= v_line.qty;
+      end if;
+      if not found then
+        raise exception '% is out of stock', v_line.title using errcode = 'P0001';
+      end if;`
+      : stockStep
+  const itemInsert = c.variants
+    ? `insert into public.shop_order_item (org_id, order_id, product_id, variant_id, title, variant_name, unit_price, quantity, line_total)
+      values (v_org, v_order, v_line.id, v_line.variant_id, v_line.title, v_line.variant_name, v_line.price, v_line.qty, v_line.price * v_line.qty);`
+    : `insert into public.shop_order_item (org_id, order_id, product_id, title, unit_price, quantity, line_total)
+      values (v_org, v_order, v_line.id, v_line.title, v_line.price, v_line.qty, v_line.price * v_line.qty);`
 
   return `-- Checkout ---------------------------------------------------------------
 create sequence public.shop_order_number_seq start 1001;
@@ -378,21 +442,21 @@ begin
 ${required.map(r => `  if nullif(btrim(coalesce(p_details ->> ${lit(r.name)}, '')), '') is null then
     raise exception 'Enter ${r.label.replace(/'/g, "''")}' using errcode = 'P0001';
   end if;`).join('\n')}
-  if exists (select 1 from jsonb_to_recordset(p_items) as i(product_id uuid, quantity int)
+  if exists (select 1 from jsonb_to_recordset(p_items) as ${recordset}
              where i.product_id is null or i.quantity is null or i.quantity < 1 or i.quantity > 999) then
     raise exception 'Each item needs a quantity between 1 and 999' using errcode = 'P0001';
   end if;
 
-  select count(distinct i.product_id) into v_requested from jsonb_to_recordset(p_items) as i(product_id uuid, quantity int);
+  select count(distinct i.product_id) into v_requested from jsonb_to_recordset(p_items) as ${recordset};
   select count(*) into v_found from ${p} p
-    where p.id in (select i.product_id from jsonb_to_recordset(p_items) as i(product_id uuid, quantity int))${activeFilter};
+    where p.id in (select i.product_id from jsonb_to_recordset(p_items) as ${recordset})${activeFilter};
   if v_found <> v_requested then
     raise exception 'Some products in your cart are no longer available' using errcode = 'P0001';
   end if;
-
+${variantChecks}
   for v_org in
     select distinct p.org_id from ${p} p
-    where p.id in (select i.product_id from jsonb_to_recordset(p_items) as i(product_id uuid, quantity int))
+    where p.id in (select i.product_id from jsonb_to_recordset(p_items) as ${recordset})
     order by p.org_id
   loop
     insert into public.shop_order (org_id, number, status, payment_method, payment_status, customer_name, phone, address, note,
@@ -404,15 +468,10 @@ ${required.map(r => `  if nullif(btrim(coalesce(p_details ->> ${lit(r.name)}, ''
 
     v_sub := 0;
     for v_line in
-      select p.id, p.${titleCol} as title, p.${c.price} as price, sum(i.quantity)::int as qty
-      from jsonb_to_recordset(p_items) as i(product_id uuid, quantity int)
-      join ${p} p on p.id = i.product_id
-      where p.org_id = v_org
-      group by p.id, p.${titleCol}, p.${c.price}
+      ${lineQuery}
     loop
-${stockStep}
-      insert into public.shop_order_item (org_id, order_id, product_id, title, unit_price, quantity, line_total)
-      values (v_org, v_order, v_line.id, v_line.title, v_line.price, v_line.qty, v_line.price * v_line.qty);
+${reserve}
+      ${itemInsert}
       v_sub := v_sub + v_line.price * v_line.qty;
     end loop;
 
@@ -454,7 +513,164 @@ ${restock}
 end $$;
 
 create trigger shop_order_status_change before update of status on public.shop_order
-  for each row execute function public.shop_order_status_change();`
+  for each row execute function public.shop_order_status_change();
+
+${paymentsSql(c.payments)}`
+}
+
+// Online payments: provider webhooks (Edge Functions with the service key) record events here.
+// Only the service role can confirm a payment, and only for the exact order total.
+function paymentsSql(methods: string[]): string {
+  if (!methods.some(m => m !== 'cash')) return ''
+  return `create table public.payment_event (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.shop_order(id) on delete cascade,
+  provider text not null,
+  external_id text not null,
+  amount numeric(14,2) not null,
+  state text not null default 'created',
+  payload jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (provider, external_id)
+);
+create index payment_event_order_idx on public.payment_event(order_id);
+alter table public.payment_event enable row level security;
+-- No policies: apps never touch this table.
+
+create or replace function public.confirm_payment(p_order uuid, p_provider text, p_external_id text, p_amount numeric, p_payload jsonb default null)
+returns text language plpgsql security definer set search_path = '' as $$
+declare
+  v_order public.shop_order;
+begin
+  select * into v_order from public.shop_order where id = p_order for update;
+  if not found then
+    raise exception 'Order not found' using errcode = 'P0002';
+  end if;
+  if v_order.status = 'cancelled' then
+    raise exception 'This order was cancelled' using errcode = 'P0001';
+  end if;
+  if p_amount <> v_order.total then
+    raise exception 'Paid amount % does not match order total %', p_amount, v_order.total using errcode = 'P0001';
+  end if;
+  insert into public.payment_event (order_id, provider, external_id, amount, state, payload)
+  values (p_order, p_provider, p_external_id, p_amount, 'paid', p_payload)
+  on conflict (provider, external_id) do update set state = 'paid', updated_at = now();
+  if v_order.payment_status <> 'paid' then
+    update public.shop_order set payment_status = 'paid' where id = p_order;
+  end if;
+  return 'paid';
+end $$;
+
+revoke execute on function public.confirm_payment(uuid, text, text, numeric, jsonb) from public, anon, authenticated;
+grant execute on function public.confirm_payment(uuid, text, text, numeric, jsonb) to service_role;
+grant all on public.payment_event to service_role;
+revoke all on public.payment_event from anon, authenticated;`
+}
+
+// Time slots: bookings cannot overlap, and free slots are computed in the business's timezone.
+function schedulingSql(spec: NormalizedSpec): string {
+  const s = spec.scheduling
+  if (!s) return ''
+  const t = s.entity
+  const e = spec.entities.find(x => x.name === t)!
+  const resource = s.resource ? e.fields.find(f => f.name === s.resource)! : undefined
+  const service = s.service ? e.fields.find(f => f.name === s.service)! : undefined
+  const active = s.status ? `b.${s.status} not in (${s.inactive.map(lit).join(', ')})` : 'true'
+  const newActive = s.status ? `new.${s.status} not in (${s.inactive.map(lit).join(', ')})` : 'true'
+  const tz = lit(s.timezone)
+  const dows = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat']
+  const closed = s.closedDays.map(d => dows.indexOf(d))
+  const minutes = service
+    ? `(select ${s.duration} from public.${service.to} where id = new.${service.name})`
+    : String(s.length)
+  const pMinutes = service
+    ? `(select ${s.duration} from public.${service.to} where id = p_service)`
+    : String(s.length)
+  const overlap = (res: string, start: string, end: string, self: string) =>
+    `exists (select 1 from public.${t} b where b.org_id = v_org and ${active} and b.${s.start} < ${end} and b.ends_at > ${start}${res}${self})`
+  const resCheck = (v: string) => resource ? ` and b.${resource.name} is not distinct from ${v}` : ''
+  const pickResource = resource
+    ? `  if new.${resource.name} is null then
+    select r.id into new.${resource.name} from public.${resource.to} r
+    where r.org_id = new.org_id and not ${overlap(resCheck('r.id').replace(' is not distinct from ', ' = '), 'new.' + s.start, 'new.ends_at', ' and b.id <> new.id')}
+    order by r.created_at limit 1;
+    if new.${resource.name} is null and exists (select 1 from public.${resource.to} where org_id = new.org_id) then
+      raise exception 'This time is fully booked. Please choose another.' using errcode = 'P0001';
+    end if;
+  end if;`
+    : ''
+  return `-- Time slots ${'-'.repeat(50)}
+create or replace function public.${t}_schedule()
+returns trigger language plpgsql security definer set search_path = '' as $$
+declare
+  v_org uuid := new.org_id;
+  v_local timestamp := new.${s.start} at time zone ${tz};
+  v_minutes int := ${minutes};
+begin
+  if tg_op = 'UPDATE' and new.${s.start} = old.${s.start} and ${newActive.replace(/new\./g, 'old.')} = ${newActive} ${resource ? `and new.${resource.name} is not distinct from old.${resource.name}` : ''} then
+    new.ends_at := old.ends_at;
+    return new;
+  end if;
+  new.ends_at := new.${s.start} + make_interval(mins => v_minutes);
+  if not (${newActive}) then
+    return new;
+  end if;
+  if tg_op = 'INSERT' and new.${s.start} < now() then
+    raise exception 'Please choose a time in the future' using errcode = 'P0001';
+  end if;
+  if v_local::time < ${lit(s.open)}::time or (new.ends_at at time zone ${tz})::time > ${lit(s.close)}::time
+    or (new.ends_at at time zone ${tz})::date <> v_local::date then
+    raise exception 'We are open from ${s.open} to ${s.close}' using errcode = 'P0001';
+  end if;
+${closed.length ? `  if extract(dow from v_local)::int in (${closed.join(', ')}) then
+    raise exception 'We are closed on this day' using errcode = 'P0001';
+  end if;` : ''}
+  -- One booking at a time per workspace, so two people can never take the same slot.
+  perform pg_advisory_xact_lock(hashtextextended(v_org::text, 0));
+${pickResource}
+  if ${overlap(resCheck('new.' + (resource?.name ?? '')), 'new.ends_at'.replace('ends_at', s.start), 'new.ends_at', ' and b.id <> new.id')} then
+    raise exception 'This time was just booked. Please choose another.' using errcode = 'P0001';
+  end if;
+  return new;
+end $$;
+
+create trigger ${t}_schedule before insert or update on public.${t}
+  for each row execute function public.${t}_schedule();
+
+-- Starting times still free on one day, in the business's timezone. Reveals availability, never who booked.
+create or replace function public.free_slots(p_org uuid, p_day date${service ? ', p_service uuid' : ''}${resource ? ', p_resource uuid default null' : ''})
+returns setof timestamptz language plpgsql stable security definer set search_path = '' as $$
+declare
+  v_org uuid := p_org;
+  v_minutes int := ${pMinutes};
+  v_slot timestamptz;
+  v_end timestamptz;
+begin
+  if v_minutes is null then return; end if;
+${closed.length ? `  if extract(dow from p_day)::int in (${closed.join(', ')}) then return; end if;` : ''}
+  for v_slot in
+    select g at time zone ${tz}
+    from generate_series((p_day + ${lit(s.open)}::time)::timestamp, (p_day + ${lit(s.close)}::time)::timestamp - make_interval(mins => v_minutes), make_interval(mins => ${s.step})) g
+  loop
+    v_end := v_slot + make_interval(mins => v_minutes);
+    continue when v_slot <= now();
+${resource
+    ? `    if p_resource is not null then
+      continue when ${overlap(` and b.${resource.name} = p_resource`, 'v_slot', 'v_end', '')};
+    elsif exists (select 1 from public.${resource.to} where org_id = v_org) then
+      continue when not exists (
+        select 1 from public.${resource.to} r
+        where r.org_id = v_org and not ${overlap(` and b.${resource.name} = r.id`, 'v_slot', 'v_end', '')}
+      );
+    else
+      continue when ${overlap('', 'v_slot', 'v_end', '')};
+    end if;`
+    : `    continue when ${overlap('', 'v_slot', 'v_end', '')};`}
+    return next v_slot;
+  end loop;
+end $$;
+grant execute on function public.free_slots to anon, authenticated;`
 }
 
 export function generateSql(spec: NormalizedSpec): string {
@@ -471,6 +687,7 @@ export function generateSql(spec: NormalizedSpec): string {
     ...spec.entities.map(e => policiesSql(e, spec)),
     customerProfilesSql(spec),
     commerceSql(spec),
+    schedulingSql(spec),
     `-- Realtime: lists refresh live when rows change.
 do $$
 begin

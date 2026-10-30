@@ -20,6 +20,7 @@
     "@capacitor/ios": "^7.6.10",
     "@capacitor/share": "^7.0.4",
     "@iconify-json/lucide": "^1.2.149",
+    "@nuxt/fonts": "^1.2.0",
     "@nuxt/icon": "^2.6.2",
     "@nuxtjs/ionic": "^1.0.2",
     "nuxt": "^4.6.3"

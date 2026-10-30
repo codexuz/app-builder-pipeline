@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { app } from '#core/schema'
 
-useHead({ title: app.name, htmlAttrs: { lang: app.locale.split('-')[0] } })
+const { lang } = useLang()
+useHead({ title: app.name })
+// The native shell has one document, so the language and style go straight on it.
+onMounted(() => {
+  document.documentElement.dataset.style = app.style
+  watchEffect(() => { document.documentElement.lang = lang.value })
+})
 
 const route = useRouter().currentRoute
 const { user } = useAuth()

@@ -1,4 +1,4 @@
-# Team app (org tenancy): a sales team shares companies, contacts, deals and tasks.
+# Team tool (type team): a sales team shares companies, contacts, deals and tasks.
 app:
   name: Acme CRM
   slug: acme-crm

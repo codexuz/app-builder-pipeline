@@ -6,7 +6,7 @@ const TEXT_MAX: Record<string, number> = { text: 500, longtext: 20000, email: 32
 const blankToNull = (v: unknown) => (v === '' || v === undefined ? null : v)
 
 function fieldSchema(f: FieldMeta): z.ZodType {
-  const req = `${f.label} is required`
+  const req = t('v.required', { label: tl(f.label) })
   let s: z.ZodType
   switch (f.type) {
     case 'text':
@@ -17,26 +17,26 @@ function fieldSchema(f: FieldMeta): z.ZodType {
       s = str
       break
     }
-    case 'email': s = z.email('Enter a valid email address').max(320); break
-    case 'url': s = z.string().regex(/^https?:\/\/\S+$/i, 'Enter a full link starting with https://').max(2000); break
+    case 'email': s = z.email(t('v.email')).max(320); break
+    case 'url': s = z.string().regex(/^https?:\/\/\S+$/i, t('v.url')).max(2000); break
     case 'integer':
     case 'number':
     case 'money':
     case 'percent': {
-      let n = f.type === 'integer' ? z.number({ error: req }).int('Use a whole number') : z.number({ error: req })
+      let n = f.type === 'integer' ? z.number({ error: req }).int(t('v.whole')) : z.number({ error: req })
       const min = f.min ?? (f.type === 'percent' ? 0 : undefined)
       const max = f.max ?? (f.type === 'percent' ? 100 : undefined)
-      if (min !== undefined) n = n.min(min, `Must be at least ${min}`)
-      if (max !== undefined) n = n.max(max, `Must be at most ${max}`)
+      if (min !== undefined) n = n.min(min, t('v.min', { n: min }))
+      if (max !== undefined) n = n.max(max, t('v.max', { n: max }))
       s = n
       break
     }
     case 'boolean': return z.boolean()
-    case 'date': s = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Enter a date'); break
+    case 'date': s = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, t('v.date')); break
     case 'datetime': s = z.string().min(1, req); break
     case 'enum': s = z.enum(f.options as [string, ...string[]], { error: req }); break
     case 'tags': return z.array(z.string().trim().min(1)).default([])
-    case 'json': s = z.string().refine((v) => { try { JSON.parse(v); return true } catch { return false } }, 'Enter valid JSON'); break
+    case 'json': s = z.string().refine((v) => { try { JSON.parse(v); return true } catch { return false } }, t('v.json')); break
     case 'relation':
     case 'user': s = z.string({ error: req }).min(1, req); break
   }
@@ -99,16 +99,16 @@ export function friendlyError(err: unknown, e?: EntityMeta): string {
   const { code, message = '', details = '' } = (err ?? {}) as { code?: string, message?: string, details?: string }
   if (code === '23505') {
     const field = e?.fields.find(f => message.includes(`${e.name}_${f.name}_key`))
-    return field ? `Another ${e!.label.toLowerCase()} already uses this ${field.label.toLowerCase()}.` : 'This record already exists.'
+    return field ? t('e.unique', { field: tl(field.label) }) : t('e.exists')
   }
   if (code === '23503') {
     return /still referenced/.test(`${message} ${details}`)
-      ? 'Other records still point to this one. Remove or reassign them first.'
+      ? t('e.linked')
       : message
   }
-  if (code === '42501' || /row-level security/.test(message)) return 'You do not have permission to do that.'
-  if (code === '23514') return 'One of the values is not allowed. Check the highlighted limits and try again.'
+  if (code === '42501' || /row-level security/.test(message)) return t('e.denied')
+  if (code === '23514') return t('e.value')
   if (code === 'P0001' || code === 'P0002') return message
-  if (/Failed to fetch|NetworkError/i.test(message)) return 'Cannot reach the server. Check your connection and try again.'
-  return message || 'Something went wrong. Please try again.'
+  if (/Failed to fetch|NetworkError/i.test(message)) return t('e.offline')
+  return message || t('e.generic')
 }

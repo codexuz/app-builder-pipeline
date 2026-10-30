@@ -43,6 +43,13 @@ request ──► app.spec.yaml ──► generator ──► SQL + security + c
               then turbo typecheck + build for both apps
 ```
 
+## Five looks, one word
+
+`app.style` gives each business its own identity, drawn from craft shoppers in Uzbekistan know by heart:
+`market` (bazaar awnings, dense like Uzum), `fashion` (adras ikat, huge type), `fresh` (Rishtan glaze, round plates),
+`luxury` (lapis, brass, girih stars) and `studio` (suzani medallions, services as a price list). Screens come in Uzbek,
+Russian and English.
+
 ## Layout
 
 ```
@@ -50,7 +57,7 @@ packages/pipeline   CLI (spec, generators, verifier)
 packages/core       Nuxt layer shared by web and mobile (Supabase, auth, records, cart, validation)
 templates/web       Nuxt UI app template (public site, shop, staff area in /app)
 templates/mobile    Ionic + Capacitor app template
-specs/examples      flower shop, marketplace, salon, CRM, budget, community
+specs/examples      flower shop, marketplace, salon, jewellery, clothing, CRM, budget, community
 apps/<slug>/        a product: app.spec.yaml, supabase/, shared/, web/, mobile/
 ```
 
@@ -68,10 +75,8 @@ apps/<slug>/        a product: app.spec.yaml, supabase/, shared/, web/, mobile/
 
 ## Limits to know
 
-- **Payments:** cash on delivery only for now. Online providers (Click, Payme, Stripe) are not built yet.
-- **Language:** screens are in English; currency and dates follow `app.locale`.
-- **Bookings:** requests that staff confirm, without automatic slot conflict checks.
-- **Variants:** no size or colour variants yet; list them as separate products.
+- **Payments:** cash, Click, Payme and Stripe are built. The protocol rules are tested offline, but try each provider's sandbox with real merchant credentials before taking real money.
+- **Photos:** the styles are built around real product photographs, so a shop without them will look unfinished.
 - **Hosting:** Vercel Hobby is non-commercial, so a shop that earns money needs a paid plan or another host. Supabase free projects pause after 7 idle days (500 MB database).
 - **Mobile:** iOS builds need a Mac; store accounts cost money (Apple $99/yr, Google $25 once). `@nuxtjs/ionic` 1.0 pins Ionic 8 and Capacitor 7.
 - **Regulated data** (health records, card data) needs paid plans and a compliance review. The pipeline does not make an app compliant.

@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url'
 import { generatedFiles, LOCK_FILE, staleFiles, writeGenerated } from './generate/index.ts'
 import { loadSpec, SpecError, type NormalizedSpec } from './spec.ts'
 import { verifyDb } from './verify/db.ts'
+import { verifyPayments } from './verify/payments.ts'
 
 const ROOT = resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const TEMPLATES = join(ROOT, 'templates')
@@ -54,10 +55,10 @@ function run(line: string, cwd = ROOT): boolean {
 }
 
 async function dbCheck(spec: NormalizedSpec, migrations: { name: string, sql: string }[]): Promise<boolean> {
-  const results = await verifyDb(spec, migrations)
+  const results = [...await verifyDb(spec, migrations), ...verifyPayments(spec.commerce?.payments ?? [])]
   for (const r of results) console.log(`${r.ok ? '  ✓' : '  ✖'} ${r.name}${r.detail ? `\n      ${r.detail}` : ''}`)
   const failed = results.filter(r => !r.ok).length
-  console.log(`\n${results.length - failed}/${results.length} database checks passed`)
+  console.log(`\n${results.length - failed}/${results.length} checks passed`)
   return failed === 0
 }
 
@@ -94,8 +95,6 @@ const commands: Record<string, () => Promise<void> | void> = {
     }
     renamePackages(join(out, 'web/vercel.json'), slug)
     cpSync(specPath, join(out, SPEC_FILE))
-    mkdirSync(join(out, 'supabase'), { recursive: true })
-    writeFileSync(join(out, 'supabase/config.toml'), `project_id = "${slug}"\n`)
     const res = writeGenerated(out, spec)
     console.log(`✓ Created ${spec.app.name} in ${out}`)
     console.log(`  web: @${slug}/web (Nuxt UI)  mobile: @${slug}/mobile (Ionic + Capacitor)`)

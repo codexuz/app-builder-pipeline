@@ -10,12 +10,12 @@ const open = ref(false)
 
 const nav = computed<NavigationMenuItem[][]>(() => [
   [
-    { label: 'Dashboard', icon: 'i-lucide-layout-dashboard', to: '/app', exact: true },
-    ...navEntities().map(e => ({ label: e.plural, icon: e.icon, to: `/app/${e.slug}` }))
+    { label: t('app.dashboard'), icon: 'i-lucide-layout-dashboard', to: '/app', exact: true },
+    ...navEntities().map(e => ({ label: tl(e.plural), icon: e.icon, to: `/app/${e.slug}` }))
   ],
   [
-    ...(teams ? [{ label: 'Members', icon: 'i-lucide-users', to: '/app/settings/members' }] : []),
-    { label: 'Settings', icon: 'i-lucide-settings', to: teams && isAdmin.value ? '/app/settings' : '/app/settings/profile' }
+    ...(teams ? [{ label: t('app.members'), icon: 'i-lucide-users', to: '/app/settings/members' }] : []),
+    { label: t('app.settings'), icon: 'i-lucide-settings', to: teams && isAdmin.value ? '/app/settings' : '/app/settings/profile' }
   ]
 ].map(group => group.map(item => ({ ...item, onSelect: () => { open.value = false } }))))
 
@@ -38,15 +38,15 @@ const displayName = computed(() => user.value?.user_metadata?.full_name || user.
 const userItems = computed<DropdownMenuItem[][]>(() => [
   [{ label: user.value?.email ?? '', type: 'label' }],
   [
-    { label: 'Profile', icon: 'i-lucide-user', to: '/app/settings/profile' },
-    ...(app.publicSite ? [{ label: 'View public site', icon: 'i-lucide-external-link', to: '/' }] : []),
+    { label: t('app.profile'), icon: 'i-lucide-user', to: '/app/settings/profile' },
+    ...(app.publicSite ? [{ label: t('app.publicSite'), icon: 'i-lucide-external-link', to: '/' }] : []),
     {
       label: colorMode.value === 'dark' ? 'Light mode' : 'Dark mode',
       icon: colorMode.value === 'dark' ? 'i-lucide-sun' : 'i-lucide-moon',
       onSelect: () => { colorMode.preference = colorMode.value === 'dark' ? 'light' : 'dark' }
     }
   ],
-  [{ label: 'Sign out', icon: 'i-lucide-log-out', onSelect: () => signOut() }]
+  [{ label: t('auth.signOut'), icon: 'i-lucide-log-out', onSelect: () => signOut() }]
 ])
 
 const searchGroups = computed(() => [{

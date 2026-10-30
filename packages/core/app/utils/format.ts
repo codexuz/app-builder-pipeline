@@ -1,34 +1,60 @@
 import { app } from '#core/schema'
+import { currentLang, currentLocale, tl } from '#core/utils/i18n'
 import type { FieldMeta } from '#core/utils/meta'
 
-export const humanize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' ')
+export const humanize = (s: string) => tl(s.charAt(0).toUpperCase() + s.slice(1).replace(/_/g, ' '))
 
-const number = () => new Intl.NumberFormat(app.locale)
+const MONTHS_UZ = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr']
+const DAYS_UZ = ['Yak', 'Dush', 'Sesh', 'Chor', 'Pay', 'Jum', 'Shan']
+const AGO_UZ = { second: 'soniya', minute: 'daqiqa', hour: 'soat', day: 'kun' }
+const SOM: Record<string, string> = { uz: 'soʻm', ru: 'сум', en: "so'm" }
 
-// Whole amounts drop the decimals: 350,000 rather than 350,000.00.
-export const formatMoney = (v: number) => new Intl.NumberFormat(app.locale, {
-  style: 'currency',
-  currency: app.currency,
-  ...(Number.isInteger(v) ? { maximumFractionDigits: 0 } : {})
-}).format(v)
+// Browsers often ship without Uzbek data, and a server may have it when the browser does not, which breaks
+// hydration. So Uzbek text is formatted here, never by Intl, and digits group the same way everywhere.
+export const formatNumber = (v: number) => {
+  const [whole = '0', part] = Math.abs(v).toFixed(Number.isInteger(v) ? 0 : 2).split('.')
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, currentLang() === 'en' ? ',' : '\u00A0')
+  return `${v < 0 ? '-' : ''}${grouped}${part ? `${currentLang() === 'en' ? '.' : ','}${part}` : ''}`
+}
+
+export function formatMoney(v: number) {
+  if (app.currency === 'UZS') return `${formatNumber(v)}\u00A0${SOM[currentLang()]}`
+  return new Intl.NumberFormat(currentLang() === 'uz' ? 'en-US' : currentLocale(), {
+    style: 'currency',
+    currency: app.currency,
+    ...(Number.isInteger(v) ? { maximumFractionDigits: 0 } : {})
+  }).format(v)
+}
+
+const parts = (d: Date) => ({ day: d.getDate(), month: MONTHS_UZ[d.getMonth()]!, year: d.getFullYear() })
 
 export function formatDate(v: string) {
   // Plain dates are calendar days; parse them as local dates so they never shift across timezones.
-  const [y, m, d] = v.slice(0, 10).split('-').map(Number)
-  return new Date(y!, m! - 1, d!).toLocaleDateString(app.locale, { year: 'numeric', month: 'short', day: 'numeric' })
+  const [y, m, n] = v.slice(0, 10).split('-').map(Number)
+  const d = new Date(y!, m! - 1, n!)
+  if (currentLang() === 'uz') {
+    const p = parts(d)
+    return `${p.day}-${p.month}, ${p.year}`
+  }
+  return d.toLocaleDateString(currentLocale(), { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
-export const formatDateTime = (v: string) =>
-  new Date(v).toLocaleString(app.locale, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+export function formatDateTime(v: string) {
+  const d = new Date(v)
+  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  return `${formatDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`)}, ${time}`
+}
+
+export const dayName = (d: Date) => currentLang() === 'uz' ? DAYS_UZ[d.getDay()]! : d.toLocaleDateString(currentLocale(), { weekday: 'short' })
+export const dayDate = (d: Date) => currentLang() === 'uz' ? `${d.getDate()}-${MONTHS_UZ[d.getMonth()]!.slice(0, 3)}` : d.toLocaleDateString(currentLocale(), { day: 'numeric', month: 'short' })
 
 export function timeAgo(v: string) {
   const s = Math.round((Date.now() - new Date(v).getTime()) / 1000)
-  const rtf = new Intl.RelativeTimeFormat(app.locale, { numeric: 'auto' })
-  if (s < 60) return rtf.format(-s, 'second')
-  if (s < 3600) return rtf.format(-Math.round(s / 60), 'minute')
-  if (s < 86400) return rtf.format(-Math.round(s / 3600), 'hour')
-  if (s < 2592000) return rtf.format(-Math.round(s / 86400), 'day')
-  return formatDate(v)
+  const unit = s < 60 ? 'second' : s < 3600 ? 'minute' : s < 86400 ? 'hour' : 'day'
+  const n = Math.round(s / { second: 1, minute: 60, hour: 3600, day: 86400 }[unit])
+  if (s >= 2592000) return formatDate(v)
+  if (currentLang() === 'uz') return `${n} ${AGO_UZ[unit]} oldin`
+  return new Intl.RelativeTimeFormat(currentLocale(), { numeric: 'auto' }).format(-n, unit)
 }
 
 // Plain-text rendering used by titles and exports; EntityValue renders the rich version.
@@ -36,9 +62,9 @@ export function formatValue(f: FieldMeta, v: unknown): string {
   if (v === null || v === undefined || v === '') return '—'
   switch (f.type) {
     case 'money': return formatMoney(Number(v))
-    case 'percent': return `${number().format(Number(v))}%`
+    case 'percent': return `${formatNumber(Number(v))}%`
     case 'integer':
-    case 'number': return number().format(Number(v))
+    case 'number': return formatNumber(Number(v))
     case 'boolean': return v ? 'Yes' : 'No'
     case 'date': return formatDate(String(v))
     case 'datetime': return formatDateTime(String(v))
@@ -48,8 +74,6 @@ export function formatValue(f: FieldMeta, v: unknown): string {
     default: return String(v)
   }
 }
-
-export const PAYMENT_LABELS: Record<string, string> = { cash: 'Cash on delivery' }
 
 export const optionItems = (f: FieldMeta) => (f.options ?? []).map(o => ({ label: humanize(o), value: o }))
 

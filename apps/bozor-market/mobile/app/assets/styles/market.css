@@ -1,0 +1,14 @@
+/* market: Chorsu bazaar. Saffron awning colour, dense two-up grid, price first. */
+:root {
+  --ion-font-family: "Golos Text", system-ui, sans-serif;
+  --font-display: "Unbounded", "Golos Text", sans-serif;
+  --ion-background-color: #fffdf7;
+  --ion-text-color: #2b2118;
+  --ion-toolbar-background: #ffb703;
+  --ion-toolbar-color: #1c130b;
+  --ion-item-background: #fffdf7;
+  --ion-border-color: #eadfc8;
+  --card-radius: 10px;
+  --image-radius: 10px;
+}
+.shop-price { order: -1; font-size: 17px; }

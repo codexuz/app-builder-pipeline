@@ -63,6 +63,22 @@ lets customers change their own rows afterwards (the default is create only).
 Two field flags protect values: `staff: true` (only staff may set it: status, approval, an answer) and
 `readonly: true` (only database functions may set it). Mark every status field `staff: true`.
 
+### Choosing a style
+
+The style sets the whole look, not just colours: fonts, shapes, layout and the home page composition, drawn from craft
+local shoppers know. Pick by how the business should feel, and never restyle by hand what a style word covers.
+
+| `style` | For | Look |
+|---|---|---|
+| `market` | Marketplaces, general stores | Bazaar awnings, dense grid, search first, price first, like Uzum |
+| `fashion` | Clothes, shoes, accessories | Adras ikat, huge type, big photographs, sharp edges |
+| `fresh` | Flowers, food, bakeries, cosmetics | Rishtan glaze, turquoise and cobalt, round plates |
+| `luxury` | Jewellery, watches, premium goods | Lapis and brass, girih stars, very few things on screen, dark |
+| `studio` | Salons, clinics, tutors, any service | Suzani medallions, services as a price list, booking first |
+
+Real photographs matter more than anything else on these pages. Tell the owner to upload a square or portrait photo
+for each product; the first one becomes the cover.
+
 Write `specs/<slug>.yaml`, then `npm run validate -- specs/<slug>.yaml` and fix every issue it reports; its messages
 say how. Ask at most three questions, and only about what changes who owns or sees data; otherwise pick sensible
 defaults and state them. Model like a domain expert: real entities, real relations, the enums people actually use.
@@ -72,7 +88,9 @@ defaults and state them. Model like a domain expert: real entities, real relatio
 |---|---|
 | `flower-shop.yaml` | One shop: catalog, reviews, contact form, checkout questions (delivery date, card message) |
 | `marketplace.yaml` | Many sellers, one catalog, carts split per seller, public questions answered by sellers |
-| `salon.yaml` | Service website without a shop: services, team, booking requests, testimonials |
+| `salon.yaml` | Service website with real time-slot booking: services, specialists, clash-proof bookings |
+| `jewellery.yaml` | Luxury shop: ring sizes, private cost records, texts per language |
+| `clothing.yaml` | Fashion brand: sizes with their own stock, bold lookbook layout |
 | `crm.yaml` | Team tool with roles |
 | `budget.yaml` | Personal private data |
 | `social.yaml` | Community with shared posts |
@@ -85,10 +103,15 @@ app:
   slug: bloom-flowers             # folder and package scope (@bloom-flowers/web, @bloom-flowers/mobile)
   description: One line shown on the site, sign-in and search results
   type: business                  # team | personal | business | marketplace
-  color: rose                     # red orange amber yellow lime green emerald teal cyan sky blue indigo violet purple fuchsia pink rose
+  style: fresh                    # market | fashion | fresh | luxury | studio (see "Choosing a style")
+  color: rose                     # main button colour: red orange amber yellow lime green emerald teal cyan sky blue indigo violet purple fuchsia pink rose
   appId: uz.bloom.flowers         # Capacitor bundle id
   currency: UZS                   # ISO 4217, used by money fields
-  locale: en-US
+  languages: [uz, ru, en]         # the first is the default; the others appear in the language switcher
+
+translations:                     # your own words per language; keys are the English words used in this spec
+  uz: { Bouquets: Guldastalar }
+  ru: { Bouquets: Букеты }
 
 entities:
   - name: bouquet                 # snake_case singular; becomes the table name
@@ -118,6 +141,7 @@ entities:
         max: 120
         list: true                # show in lists (default: everything except longtext/json)
         search: true              # included in list search (default: text, email, phone)
+        translate: true           # text/longtext: adds name_ru, name_en… for staff to fill in per language
         staff: true               # only staff may set it
         readonly: true            # only database functions may set it (needs a default if required)
 
@@ -126,10 +150,27 @@ commerce:                         # adds cart, checkout, orders and stock. Needs
   price: price                    # required money field
   stock: stock                    # optional; required integer with a default. Reserved at checkout, returned on cancel
   active: available               # optional boolean; false hides it from the shop and blocks ordering
-  payments: [cash]                # only cash (on delivery) today
+  payments: [cash, click, payme]  # cash | click | payme | stripe. Online ones add Edge Functions (Stage 5)
+  variants: true                  # sizes, colours or other options, each with its own stock and optional price
+  variantLabel: Size              # what an option is called
   delivery: { fee: 30000, freeFrom: 500000 }
   orderFields:                    # extra checkout questions, stored on the order (same keys as fields)
     - { name: delivery_date, type: date, required: true }
+
+scheduling:                       # time-slot booking; double-booking is impossible, enforced in the database
+  entity: booking                 # a customer entity
+  start: starts_at                # required datetime field on it
+  service: service_id             # required relation to what is booked...
+  duration: duration_minutes      # ...and the required integer minutes field on that entity
+  length: 60                      # or a fixed length in minutes when there is no service
+  resource: specialist_id         # optional relation: who is busy. Empty on a booking means "first free"
+  status: status                  # enum field...
+  inactive: [cancelled]           # ...and the values that free the slot again
+  open: "09:00"
+  close: "19:00"
+  step: 30                        # minutes between start times
+  closedDays: [mon]
+  timezone: Asia/Tashkent
 
 site:                             # the public home page. Needs type business or marketplace
   hero: { title: ..., subtitle: ..., cta: { label: Shop now, to: /bouquets } }
@@ -184,7 +225,7 @@ apps/<slug>/        one product: app.spec.yaml, supabase/, shared/ (generated), 
 
 | Need | Put it in |
 |---|---|
-| A custom public page for one entity | `web/app/pages/<plural-slug>/index.vue` and `mobile/app/pages/<plural-slug>/index.vue`. Static routes win over the generic `[entity]` pages. Web: reuse `SiteRecordGrid`, `SiteRecordCard`, `SitePublicForm`. Mobile: `CatalogGrid`, `PublicForm`. |
+| A custom public page for one entity | `web/app/pages/<plural-slug>/index.vue` and `mobile/app/pages/<plural-slug>/index.vue`. Static routes win over the generic `[entity]` pages. Web: reuse `SiteRecordGrid`, `SiteRecordCard`, `SitePublicForm`, `SiteHero`. Mobile: `CatalogGrid`, `PublicForm`. |
 | A custom staff page | `web/app/pages/app/<plural-slug>/index.vue`, `mobile/app/pages/app/<plural-slug>/index.vue`. Web: `EntityTable`, `EntityForm`, `EntityValue`. Mobile: `RecordList`, `RecordForm`, `FieldValue`, `RecordPicker`. |
 | A new screen | A page in each app; add it to `web/app/layouts/site.vue` or `default.vue`, and `mobile/app/components/AppMenu.vue` |
 | Data logic used by both clients | A composable or util in `packages/core/app` (auto-imported in both apps) |
@@ -193,8 +234,14 @@ apps/<slug>/        one product: app.spec.yaml, supabase/, shared/ (generated), 
 | Server-only logic (online payments, email, third-party APIs with secrets) | A Supabase Edge Function in `apps/<slug>/supabase/functions/<name>`, called with `useSupabase().functions.invoke()` |
 | Native features (camera, push, biometrics) | A Capacitor 7 plugin in `mobile/package.json`, wrapped in a composable in `mobile/app/composables` |
 
+Pass components, never name strings, to `<component :is>` (`import { NuxtLink } from '#components'`): a string renders a dead tag that no typecheck or build can catch.
+
+All interface text goes through `t('key')` (`packages/core/app/utils/i18n.ts`, Uzbek, Russian and English side by
+side); spec words and labels through `tl('Label')`. Never hardcode a visible string.
+
 Web: Nuxt UI components and semantic colours (`text-muted`, `bg-elevated`); load the `nuxt-ui` skill before complex
-UI. Pages outside `/app` use `definePageMeta({ layout: 'site' })` and `useAsyncData`; add a page that needs the session
+UI. Per-style tokens and layout live in `web/app/assets/styles/<style>.css`. Pages outside `/app` use
+`definePageMeta({ layout: 'site' })` and `useAsyncData`; add a page that needs the session
 to `routeRules` in `nuxt.config.ts`. Set `useSeoMeta` on every public page.
 Mobile: every page's root is `<ion-page>`; use Ionic components and `var(--ion-color-*)`; navigate with
 `useIonRouter()`; refresh data in `onIonViewWillEnter` (Ionic keeps pages alive). Read route params with
@@ -213,7 +260,11 @@ inputs there. Run `npm run verify -- apps/<slug>` after each feature.
    that staff-only fields and `created_by` cannot be forged, and that audit and dashboard work. With `commerce` it also
    proves checkout: prices come from the database, stock cannot be oversold, totals cannot be rewritten, cancelling
    returns stock, hidden products cannot be ordered, and marketplace carts split per seller;
-3. `turbo run typecheck build` for `@<slug>/web` and `@<slug>/mobile` (unknown components fail the typecheck).
+   The same run proves options (a product with options needs one, stock is per option), bookings (no double booking,
+   no overlaps, opening hours, closed days, cancelling frees the slot), payments (only the service role confirms, the
+   amount must match, repeated callbacks count once) and spam limits on public forms;
+3. offline checks of the payment protocol rules (Click signatures, Payme amounts, Stripe webhooks);
+4. `turbo run typecheck build` for `@<slug>/web` and `@<slug>/mobile` (unknown components fail the typecheck).
 
 ## Stage 5: Deploy (free tiers; ask the user before running these)
 
@@ -225,7 +276,12 @@ inputs there. Run `npm run verify -- apps/<slug>` after each feature.
 3. **Vercel**: import the repo at vercel.com/new, set **Root Directory** to `apps/<slug>/web` (`vercel.json` there
    installs at the repo root and builds with Turborepo), add `NUXT_PUBLIC_SUPABASE_URL` and `NUXT_PUBLIC_SUPABASE_KEY`.
    Each product is its own Vercel project.
-4. **Mobile**: copy `mobile/.env.example` to `mobile/.env` with the same Supabase values plus `NUXT_PUBLIC_WEB_URL`
+4. **Online payments** (only if `payments` lists them; ask the user for merchant accounts first): set secrets with
+   `npx supabase secrets set NAME=value`: `PUBLIC_SITE_URL` always; `CLICK_SERVICE_ID`, `CLICK_MERCHANT_ID`,
+   `CLICK_SECRET_KEY`; `PAYME_MERCHANT_ID`, `PAYME_KEY`; `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SHOP_CURRENCY`.
+   Then `npx supabase functions deploy`. In each provider's cabinet set the callback URL to
+   `https://<ref>.supabase.co/functions/v1/payment-click` (or `-payme`, `-stripe`). Run a sandbox payment before going live.
+5. **Mobile**: copy `mobile/.env.example` to `mobile/.env` with the same Supabase values plus `NUXT_PUBLIC_WEB_URL`
    (the Vercel URL, used for email and invite links). Then in `apps/<slug>/mobile`: `npx cap add android` (Android
    Studio required) → `npm run android`. iOS needs a Mac: `npx cap add ios` → `npm run ios`. Commit the generated
    `android/` and `ios/` folders.
@@ -244,8 +300,6 @@ spec), then `npx supabase db push`. Ship a new mobile build for store users; the
 
 ## Not built yet
 
-Tell the user rather than improvising: online payments (only cash on delivery; Click, Payme or Stripe need an Edge
-Function adapter and merchant credentials), interface translation (screens are English; currency and dates follow
-`locale`), slot-based booking with conflict prevention (`salon.yaml` takes requests that staff confirm), product
-variants (model sizes as separate products for now), spam protection on `inbox` forms, and browser tests of full
-user journeys.
+Tell the user rather than improvising: browser tests of full user journeys, and subscriptions or recurring payments.
+Click, Payme and Stripe are built and their protocol rules are tested offline, but each still has to be tried in the
+provider's sandbox with real merchant credentials before taking real money.

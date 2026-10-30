@@ -5,40 +5,40 @@ import { entityByName, isPublicEntity, type SectionMeta } from '#core/utils/meta
 definePageMeta({ layout: 'site' })
 
 const catalog = entityByName(commerce?.product ?? '') ?? entities.find(isPublicEntity)
-const hero = site?.hero ?? {
-  title: app.name,
-  subtitle: app.description,
-  cta: catalog ? { label: `Browse ${catalog.plural.toLowerCase()}`, to: `/${catalog.slug}` } : undefined
-}
 const sections: SectionMeta[] = site?.sections.length
   ? site.sections
-  : catalog ? [{ type: 'entity', entity: catalog.name, limit: 8 }] : []
+  : catalog ? [{ type: 'entity', entity: catalog.name, limit: 10 }] : []
 const entityOf = (name: string) => entityByName(name)!
 
 useSeoMeta({ description: app.description, ogTitle: app.name, ogDescription: app.description })
 </script>
 
 <template>
-  <div v-if="app.publicSite">
-    <UPageHero
-      :title="hero.title"
-      :description="hero.subtitle"
-      :links="hero.cta ? [{ label: hero.cta.label, to: hero.cta.to, size: 'xl', trailingIcon: 'i-lucide-arrow-right' }] : []"
-    />
-
+  <div>
+    <SiteHero />
     <template v-for="(s, i) in sections" :key="i">
-      <UPageSection v-if="s.type === 'entity'" :title="s.title ?? entityOf(s.entity).plural" :ui="{ container: 'py-10 sm:py-12 lg:py-14' }">
-        <SiteRecordGrid :entity="entityOf(s.entity)" :limit="s.limit" />
-        <div v-if="entityOf(s.entity).access === 'public'" class="flex justify-center">
-          <UButton :to="`/${entityOf(s.entity).slug}`" label="View all" color="neutral" variant="outline" trailing-icon="i-lucide-arrow-right" />
+      <section v-if="s.type === 'entity'" class="site-section">
+        <div class="site-wrap">
+          <div class="site-section__head">
+            <h2 class="site-title site-h2">{{ tl(s.title ?? entityOf(s.entity).plural) }}</h2>
+            <NuxtLink v-if="entityOf(s.entity).access === 'public'" :to="`/${entityOf(s.entity).slug}`" class="text-sm text-muted hover:text-highlighted">{{ t('shop.viewAll') }}</NuxtLink>
+          </div>
+          <SiteRecordGrid :entity="entityOf(s.entity)" :limit="s.limit" />
         </div>
-      </UPageSection>
-      <UPageSection v-else-if="s.type === 'text'" :title="s.title" :description="s.body" :ui="{ container: 'py-10 sm:py-12 lg:py-14' }" />
-      <UPageSection v-else :title="s.title ?? entityOf(s.entity).label" :description="s.description" :ui="{ container: 'py-10 sm:py-12 lg:py-14' }">
-        <div class="mx-auto w-full max-w-2xl">
-          <SitePublicForm :entity="entityOf(s.entity)" />
+      </section>
+      <section v-else-if="s.type === 'text'" class="site-section">
+        <div class="site-wrap">
+          <h2 class="site-title site-h2">{{ tl(s.title) }}</h2>
+          <p class="site-lede mt-3">{{ tl(s.body) }}</p>
         </div>
-      </UPageSection>
+      </section>
+      <section v-else class="site-section">
+        <div class="site-wrap max-w-2xl">
+          <h2 class="site-title site-h2">{{ tl(s.title ?? entityOf(s.entity).label) }}</h2>
+          <p v-if="s.description" class="site-lede mt-2">{{ tl(s.description) }}</p>
+          <div class="mt-5"><SitePublicForm :entity="entityOf(s.entity)" /></div>
+        </div>
+      </section>
     </template>
   </div>
 </template>

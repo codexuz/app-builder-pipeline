@@ -1,0 +1,53 @@
+/* studio: suzani wall hanging. Pomegranate field with stitched medallions; services read like a price list. */
+html[data-style="studio"], html[data-style="studio"].dark {
+  --font-sans: "Mulish", system-ui, sans-serif;
+  --font-display: "Philosopher", "Mulish", serif;
+  --display-weight: 700;
+  --display-tracking: 0;
+  --display-case: none;
+  --ui-bg: #fff8f6;
+  --ui-bg-elevated: #fbe9e4;
+  --ui-text: #3a1a22;
+  --ui-text-highlighted: #2c0f17;
+  --ui-text-muted: #6e4a52;
+  --ui-text-dimmed: #8a6871;
+  --ui-border: #f0d6cf;
+  --ui-border-accented: #dcae9f;
+  --ui-primary: #9f1f3f;
+  --ui-radius: 0.75rem;
+  --media-radius: 50%;
+  --suzani-a: #c8314f;
+  --suzani-b: #1d2a66;
+  --suzani-c: #f0b23c;
+  --cols-sm: 2;
+  --cols-md: 3;
+  --cols-lg: 4;
+  --grid-gap: 2rem 1rem;
+  --footer-ground: #2c0f17;
+  --footer-ink: #d9b8bd;
+  --footer-strong: #f0b23c;
+  --hero-ink: #fff4ee;
+  --hero-soft: #fbd9d0;
+}
+
+[data-style="studio"] .site-brand { font-size: 1.5rem; }
+[data-style="studio"] .site-hero { background: #7d1531; }
+[data-style="studio"] .site-hero .motif {
+  position: absolute;
+  width: clamp(18rem, 44vw, 34rem);
+  height: auto;
+  inset-inline-end: calc(var(--site-gutter) * -1);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: -1;
+}
+[data-style="studio"] .site-hero__inner { padding-block: clamp(4rem, 10vw, 7.5rem); }
+[data-style="studio"] .site-hero__title { max-width: 13ch; }
+@media (max-width: 47.99rem) {
+  [data-style="studio"] .site-hero .motif { opacity: 0.28; }
+}
+[data-style="studio"] .rec { text-align: center; }
+[data-style="studio"] .rec__body { align-items: center; }
+
+[data-style="studio"] .site-hero__cta a { background: #f0b23c; color: #2c0f17; }
+[data-style="studio"] .site-hero__cta a:hover { background: #f5c361; }

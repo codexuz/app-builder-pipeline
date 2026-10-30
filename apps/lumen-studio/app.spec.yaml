@@ -5,9 +5,50 @@ app:
   slug: lumen-studio
   description: Hair, nails and skin care in the centre of Samarkand.
   type: business
+  style: studio
   color: teal
   appId: uz.lumen.studio
   currency: UZS
+
+translations:
+  uz:
+    Services: Xizmatlar
+    Specialists: Mutaxassislar
+    Specialist: Mutaxassis
+    Bookings: Yozuvlar
+    Booking: Yozilish
+    Testimonials: Fikrlar
+    Reviews: Fikrlar
+    Our team: Jamoamiz
+    Service: Xizmat
+    Hair: Soch
+    Nails: Tirnoq
+    Skin: Teri
+    Makeup: Pardoz
+    Take an hour for yourself: Oʻzingizga bir soat ajrating
+    Book a haircut, manicure or facial in a few taps. We confirm by phone within 15 minutes.: Soch, manikyur yoki yuz parvarishiga bir necha bosishda yoziling. 15 daqiqa ichida telefon orqali tasdiqlaymiz.
+    Book a visit: Yozilish
+    Ask us anything: Savolingizni yozing
+    Leave empty for the first free specialist: Birinchi boʻsh mutaxassis uchun boʻsh qoldiring
+  ru:
+    Services: Услуги
+    Specialists: Мастера
+    Specialist: Мастер
+    Bookings: Записи
+    Booking: Запись
+    Testimonials: Отзывы
+    Reviews: Отзывы
+    Our team: Наша команда
+    Service: Услуга
+    Hair: Волосы
+    Nails: Ногти
+    Skin: Кожа
+    Makeup: Макияж
+    Take an hour for yourself: Найдите час для себя
+    Book a haircut, manicure or facial in a few taps. We confirm by phone within 15 minutes.: Запишитесь на стрижку, маникюр или уход за лицом в пару нажатий. Подтвердим по телефону за 15 минут.
+    Book a visit: Записаться
+    Ask us anything: Задайте вопрос
+    Leave empty for the first free specialist: Оставьте пустым для первого свободного мастера
 
 entities:
   - name: service
@@ -36,12 +77,11 @@ entities:
     access: customer
     customerCan: [delete]
     title: service_id
-    sort: { field: date, dir: asc }
+    sort: { field: starts_at, dir: asc }
     fields:
       - { name: service_id, type: relation, to: service, required: true, label: Service }
       - { name: specialist_id, type: relation, to: specialist, label: Specialist, help: Leave empty for the first free specialist }
-      - { name: date, type: date, required: true }
-      - { name: time, type: enum, required: true, options: ["09:00", "10:00", "11:00", "12:00", "14:00", "15:00", "16:00", "17:00", "18:00"] }
+      - { name: starts_at, type: datetime, required: true, label: Time }
       - { name: phone, type: phone, required: true }
       - { name: note, type: longtext, max: 500 }
       - { name: status, type: enum, options: [requested, confirmed, completed, cancelled], default: requested, required: true, staff: true }
@@ -66,6 +106,19 @@ entities:
       - { name: phone, type: phone, required: true }
       - { name: message, type: longtext, required: true, max: 2000, list: true }
       - { name: status, type: enum, options: [new, answered], default: new, required: true, staff: true }
+
+scheduling:
+  entity: booking
+  start: starts_at
+  service: service_id
+  duration: duration_minutes
+  resource: specialist_id
+  status: status
+  inactive: [cancelled]
+  open: "09:00"
+  close: "19:00"
+  step: 30
+  closedDays: [mon]
 
 dashboard:
   - { type: count, entity: booking, label: Booking requests, where: { status: requested }, icon: i-lucide-calendar-clock }

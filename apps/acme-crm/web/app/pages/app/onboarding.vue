@@ -4,10 +4,10 @@ import { app } from '#core/schema'
 
 definePageMeta({ layout: 'auth' })
 const words = app.type === 'business'
-  ? { title: 'Set up your business', name: 'Business name', hint: 'This creates the one workspace for your shop or company. Everyone who signs up later is a customer.', cta: 'Create business' }
+  ? { title: t('app.onboardBusiness'), name: tl('Name'), hint: 'This creates the one workspace for your shop or company. Everyone who signs up later is a customer.', cta: 'Create business' }
   : app.type === 'marketplace'
-    ? { title: 'Open your shop', name: 'Shop name', hint: `Your shop name is public. You can add products and invite staff next.`, cta: 'Open shop' }
-    : { title: 'Create your workspace', name: 'Workspace name', hint: 'A workspace holds your team\'s data. You can invite people once it exists. Joining a team? Open the invite link you were sent.', cta: 'Create workspace' }
+    ? { title: t('app.onboardShop'), name: tl('Name'), hint: `Your shop name is public. You can add products and invite staff next.`, cta: 'Open shop' }
+    : { title: t('app.onboardTeam'), name: tl('Name'), hint: 'A workspace holds your team\'s data. You can invite people once it exists. Joining a team? Open the invite link you were sent.', cta: 'Create workspace' }
 useHead({ title: words.title })
 
 const route = useRoute()

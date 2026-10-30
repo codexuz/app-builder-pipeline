@@ -5,7 +5,7 @@ argument-hint: <what the app should do>
 
 Build this app end to end by following AGENTS.md exactly: $ARGUMENTS
 
-1. **Spec.** Choose the app type and an access word for each entity, and model the domain like an expert in it. Read
+1. **Spec.** Choose the app type, the style word that fits the business, and an access word for each entity, and model the domain like an expert in it. Read
    `specs/examples/*.yaml` first. Write `specs/<slug>.yaml` and run `npm run validate -- specs/<slug>.yaml` until it is
    clean. Show the user a short summary (entities, who sees what, dashboard) and the assumptions you made. Continue
    unless a choice changes who owns or can see data and you could not infer it; then ask (at most three questions).

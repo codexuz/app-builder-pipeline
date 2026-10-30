@@ -1,0 +1,7 @@
+{
+  "name": "@zarafshon-jewellery/shared",
+  "private": true,
+  "type": "module",
+  "description": "Generated schema for Zarafshon Zargarlik, shared by its web and mobile apps.",
+  "main": "./schema.ts"
+}

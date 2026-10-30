@@ -1,5 +1,6 @@
 // GENERATED from app.spec.yaml by the pipeline. Do not edit; change the spec and regenerate.
 export default defineAppConfig({
+  style: 'studio',
   ui: {
     colors: {
       primary: 'violet',

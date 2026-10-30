@@ -4,7 +4,7 @@ import type { Row } from '#core/utils/meta'
 const entity = useEntityRoute()
 const route = useRouter().currentRoute.value
 const router = useIonRouter()
-const heading = entity.access === 'inbox' ? 'Contact us' : `New ${entity.label.toLowerCase()}`
+const heading = entity.access === 'inbox' ? t('contact.title') : tl(entity.label)
 useHead({ title: heading })
 
 // Links such as "Write a review" pass ?<field>=<id> to fill in what the record is about.

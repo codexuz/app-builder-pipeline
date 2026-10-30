@@ -38,7 +38,7 @@ async function onSubmit() {
         v-for="f in fields"
         :key="f.name"
         :name="f.name"
-        :label="f.label"
+        :label="tl(f.label)"
         :description="f.help"
         :required="f.required"
         :class="wide(f.type) ? 'sm:col-span-2' : ''"

@@ -1,0 +1,26 @@
+/* luxury: lapis and brass. Dark always: a jeweller's case, read on a phone in any light. */
+:root {
+  color-scheme: dark;
+  --ion-font-family: "Jost", system-ui, sans-serif;
+  --font-display: "Forum", "Jost", serif;
+  --ion-background-color: #0a1a3f;
+  --ion-background-color-rgb: 10, 26, 63;
+  --ion-text-color: #e9e2d0;
+  --ion-text-color-rgb: 233, 226, 208;
+  --ion-toolbar-background: #071330;
+  --ion-toolbar-color: #f7f1e1;
+  --ion-item-background: #0a1a3f;
+  --ion-card-background: #10245a;
+  --ion-border-color: #24407f;
+  --ion-color-primary: #d9b45c;
+  --ion-color-primary-rgb: 217, 180, 92;
+  --ion-color-primary-contrast: #0a1a3f;
+  --ion-color-primary-shade: #bf9e51;
+  --ion-color-primary-tint: #ddbc6c;
+  --girih-line: rgb(217 180 92 / 0.28);
+  --card-radius: 2px;
+  --image-radius: 2px;
+  --image-ratio: 4 / 5;
+}
+.hero { text-align: center; padding-block: 56px; }
+.shop-price { color: #e6c477; font-weight: 400; }

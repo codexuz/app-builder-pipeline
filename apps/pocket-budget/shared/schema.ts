@@ -7,9 +7,14 @@ export const app = {
   "color": "emerald",
   "appId": "com.pocketbudget.app",
   "currency": "USD",
-  "locale": "en-US",
+  "languages": [
+    "uz",
+    "ru",
+    "en"
+  ],
   "publicProfiles": false,
-  "publicSite": false
+  "publicSite": false,
+  "style": "studio"
 }
 
 export const entities = [
@@ -29,6 +34,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -48,6 +54,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Kind",
         "list": true,
         "search": false
@@ -61,11 +68,13 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Opening balance",
         "list": true,
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -107,6 +116,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Name",
         "list": true,
         "search": true
@@ -124,11 +134,13 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Kind",
         "list": true,
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -174,6 +186,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Description",
         "list": true,
         "search": true
@@ -187,6 +200,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Amount",
         "list": true,
         "search": false
@@ -204,6 +218,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Kind",
         "list": true,
         "search": false
@@ -218,6 +233,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false
       },
@@ -230,6 +246,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Account",
         "list": true,
         "search": false,
@@ -245,6 +262,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Category",
         "list": true,
         "search": false,
@@ -259,6 +277,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Tags",
         "list": true,
         "search": false
@@ -271,11 +290,13 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Notes",
         "list": false,
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -313,6 +334,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Category",
         "list": true,
         "search": false,
@@ -328,6 +350,7 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "label": "Month",
         "list": true,
         "search": false
@@ -342,10 +365,12 @@ export const entities = [
         "staff": false,
         "readonly": false,
         "auto": false,
+        "translate": false,
         "list": true,
         "search": false
       }
     ],
+    "builtIn": false,
     "permissions": {
       "read": "viewer",
       "create": "member",
@@ -411,7 +436,11 @@ export const dashboard = [
 
 export const commerce = null
 
+export const scheduling = null
+
 export const site = null
+
+export const translations = {}
 
 export interface Account {
   id: string
