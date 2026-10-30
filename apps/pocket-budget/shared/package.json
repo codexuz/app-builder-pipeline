@@ -1,0 +1,7 @@
+{
+  "name": "@pocket-budget/shared",
+  "private": true,
+  "type": "module",
+  "description": "Generated schema for Pocket Budget, shared by its web and mobile apps.",
+  "main": "./schema.ts"
+}

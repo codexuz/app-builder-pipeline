@@ -1,0 +1,7 @@
+{
+  "name": "@acme-crm/shared",
+  "private": true,
+  "type": "module",
+  "description": "Generated schema for Acme CRM, shared by its web and mobile apps.",
+  "main": "./schema.ts"
+}

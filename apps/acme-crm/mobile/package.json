@@ -1,0 +1,32 @@
+{
+  "name": "@acme-crm/mobile",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 3100",
+    "build": "nuxt generate",
+    "typecheck": "nuxt typecheck",
+    "postinstall": "nuxt prepare",
+    "cap:sync": "cap sync",
+    "android": "nuxt generate && cap sync android && cap open android",
+    "ios": "nuxt generate && cap sync ios && cap open ios"
+  },
+  "dependencies": {
+    "@app-pipeline/core": "*",
+    "@acme-crm/shared": "*",
+    "@capacitor/android": "^7.6.10",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/core": "^7.6.10",
+    "@capacitor/ios": "^7.6.10",
+    "@capacitor/share": "^7.0.4",
+    "@iconify-json/lucide": "^1.2.149",
+    "@nuxt/icon": "^2.6.2",
+    "@nuxtjs/ionic": "^1.0.2",
+    "nuxt": "^4.6.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.6.10",
+    "typescript": "~5.9.3",
+    "vue-tsc": "^3.3.14"
+  }
+}

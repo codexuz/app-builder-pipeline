@@ -1,0 +1,14 @@
+{
+  "name": "@app-pipeline/core",
+  "private": true,
+  "type": "module",
+  "description": "Nuxt layer shared by every web and mobile app: Supabase client, auth, workspaces, permissions, records, validation.",
+  "main": "./nuxt.config.ts",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "zod": "^4.6.7"
+  },
+  "peerDependencies": {
+    "nuxt": "^4.1.0"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "name": "app-pipeline",
+  "private": true,
+  "type": "module",
+  "packageManager": "npm@11.19.0",
+  "description": "Turborepo that turns one request into a real Nuxt UI web app + Ionic/Capacitor mobile app on Supabase.",
+  "workspaces": [
+    "packages/*",
+    "apps/*/shared",
+    "apps/*/web",
+    "apps/*/mobile"
+  ],
+  "scripts": {
+    "pipeline": "tsx packages/pipeline/cli.ts",
+    "validate": "tsx packages/pipeline/cli.ts validate",
+    "new": "tsx packages/pipeline/cli.ts new",
+    "generate": "tsx packages/pipeline/cli.ts generate",
+    "verify": "tsx packages/pipeline/cli.ts verify",
+    "lock": "tsx packages/pipeline/cli.ts lock",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "test": "tsx packages/pipeline/cli.ts verify-db specs/examples/crm.yaml && tsx packages/pipeline/cli.ts verify-db specs/examples/budget.yaml && tsx packages/pipeline/cli.ts verify-db specs/examples/social.yaml"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.10"
+  }
+}

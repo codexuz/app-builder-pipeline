@@ -1,0 +1,57 @@
+# Personal app (user tenancy): every user has a private workspace created at sign-up.
+# No teams, invitations or member screens; nobody else can see the data.
+app:
+  name: Pocket Budget
+  slug: pocket-budget
+  description: Track accounts, spending and monthly budgets.
+  tenancy: user
+  color: emerald
+  appId: com.pocketbudget.app
+  currency: USD
+
+entities:
+  - name: account
+    icon: i-lucide-wallet
+    fields:
+      - { name: name, type: text, required: true, unique: true }
+      - { name: kind, type: enum, options: [checking, savings, credit, cash], default: checking, required: true }
+      - { name: opening_balance, type: money, default: 0 }
+
+  - name: category
+    plural: Categories
+    icon: i-lucide-tags
+    fields:
+      - { name: name, type: text, required: true, unique: true }
+      - { name: kind, type: enum, options: [expense, income], default: expense, required: true }
+
+  - name: entry
+    label: Transaction
+    plural: Transactions
+    icon: i-lucide-arrow-left-right
+    title: description
+    sort: { field: occurred_on, dir: desc }
+    attachments: true
+    fields:
+      - { name: description, type: text, required: true }
+      - { name: amount, type: money, required: true, min: 0 }
+      - { name: kind, type: enum, options: [expense, income], default: expense, required: true }
+      - { name: occurred_on, type: date, label: Date, required: true, default: now }
+      - { name: account_id, type: relation, to: account, required: true }
+      - { name: category_id, type: relation, to: category }
+      - { name: tags, type: tags }
+      - { name: notes, type: longtext }
+
+  - name: budget
+    icon: i-lucide-piggy-bank
+    title: category_id
+    fields:
+      - { name: category_id, type: relation, to: category, required: true, cascade: true }
+      - { name: month, type: date, required: true, help: Any day in the month }
+      - { name: limit_amount, type: money, label: Limit, required: true, min: 0 }
+
+dashboard:
+  - { type: sum, entity: entry, field: amount, label: Total spent, where: { kind: expense }, icon: i-lucide-trending-down }
+  - { type: sum, entity: entry, field: amount, label: Total income, where: { kind: income }, icon: i-lucide-trending-up }
+  - { type: count, entity: entry, label: Transactions, icon: i-lucide-arrow-left-right }
+  - { type: count, entity: account, label: Accounts, icon: i-lucide-wallet }
+  - { type: breakdown, entity: entry, field: kind, label: Income vs expense }

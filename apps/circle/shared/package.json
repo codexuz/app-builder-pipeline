@@ -1,0 +1,7 @@
+{
+  "name": "@circle/shared",
+  "private": true,
+  "type": "module",
+  "description": "Generated schema for Circle, shared by its web and mobile apps.",
+  "main": "./schema.ts"
+}

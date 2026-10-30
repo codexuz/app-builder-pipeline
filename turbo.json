@@ -1,0 +1,24 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "ui": "stream",
+  "globalEnv": ["NUXT_PUBLIC_SUPABASE_URL", "NUXT_PUBLIC_SUPABASE_KEY", "NUXT_PUBLIC_WEB_URL"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": [".output/**"]
+    },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "cap:sync": {
+      "dependsOn": ["build"],
+      "cache": false
+    }
+  }
+}

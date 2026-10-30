@@ -1,0 +1,69 @@
+# Team app (org tenancy): a sales team shares companies, contacts, deals and tasks.
+app:
+  name: Acme CRM
+  slug: acme-crm
+  description: Track companies, contacts, deals and follow-up tasks as a team.
+  tenancy: org
+  color: indigo
+  appId: com.acme.crm
+  currency: USD
+
+entities:
+  - name: company
+    plural: Companies
+    icon: i-lucide-building-2
+    attachments: true
+    fields:
+      - { name: name, type: text, required: true, unique: true }
+      - { name: industry, type: enum, options: [software, retail, healthcare, manufacturing, finance, other] }
+      - { name: website, type: url }
+      - { name: phone, type: phone }
+      - { name: employees, type: integer, min: 0 }
+      - { name: notes, type: longtext }
+
+  - name: contact
+    icon: i-lucide-contact
+    title: full_name
+    fields:
+      - { name: full_name, type: text, required: true }
+      - { name: email, type: email }
+      - { name: phone, type: phone }
+      - { name: job_title, type: text }
+      - { name: company_id, type: relation, to: company }
+      - { name: status, type: enum, options: [lead, customer, churned], default: lead }
+      - { name: owner_id, type: user, label: Owner, default: me }
+
+  - name: deal
+    icon: i-lucide-handshake
+    attachments: true
+    sort: { field: close_date, dir: asc }
+    fields:
+      - { name: title, type: text, required: true }
+      - { name: company_id, type: relation, to: company, required: true }
+      - { name: contact_id, type: relation, to: contact }
+      - { name: amount, type: money, min: 0 }
+      - { name: stage, type: enum, options: [lead, qualified, proposal, won, lost], default: lead }
+      - { name: probability, type: percent }
+      - { name: close_date, type: date }
+      - { name: owner_id, type: user, label: Owner, default: me }
+
+  - name: task
+    icon: i-lucide-list-checks
+    sort: { field: due_date, dir: asc }
+    permissions: { delete: member }
+    own: [delete]
+    fields:
+      - { name: title, type: text, required: true }
+      - { name: due_date, type: date }
+      - { name: done, type: boolean }
+      - { name: priority, type: enum, options: [low, normal, high], default: normal }
+      - { name: deal_id, type: relation, to: deal, cascade: true }
+      - { name: assignee_id, type: user, label: Assignee, default: me }
+
+dashboard:
+  - { type: count, entity: deal, label: Open deals, where: { stage: [lead, qualified, proposal] }, icon: i-lucide-handshake }
+  - { type: sum, entity: deal, field: amount, label: Pipeline value, where: { stage: [lead, qualified, proposal] }, icon: i-lucide-circle-dollar-sign }
+  - { type: sum, entity: deal, field: amount, label: Won revenue, where: { stage: won }, icon: i-lucide-trophy }
+  - { type: count, entity: task, label: Open tasks, where: { done: false }, icon: i-lucide-list-checks }
+  - { type: breakdown, entity: deal, field: stage, label: Deals by stage }
+  - { type: breakdown, entity: contact, field: status, label: Contacts by status }

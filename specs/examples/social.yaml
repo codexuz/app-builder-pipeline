@@ -1,0 +1,52 @@
+# Social app (user tenancy + public content): everyone owns their own posts and comments,
+# every signed-in user reads them. Bookmarks stay private.
+app:
+  name: Circle
+  slug: circle
+  description: A small community to share posts, comment and follow people.
+  tenancy: user
+  color: violet
+  appId: com.circle.social
+
+entities:
+  - name: post
+    icon: i-lucide-message-square-text
+    title: headline
+    visibility: public
+    attachments: true
+    fields:
+      - { name: headline, type: text, required: true, max: 140 }
+      - { name: body, type: longtext, required: true, max: 5000 }
+      - { name: topic, type: enum, options: [general, question, showcase, news], default: general, required: true }
+      - { name: link, type: url }
+      - { name: tags, type: tags }
+
+  - name: comment
+    icon: i-lucide-messages-square
+    title: body
+    visibility: public
+    nav: false
+    fields:
+      - { name: post_id, type: relation, to: post, required: true, cascade: true }
+      - { name: body, type: longtext, required: true, max: 2000, list: true }
+
+  - name: follow
+    icon: i-lucide-user-plus
+    title: following_id
+    visibility: public
+    fields:
+      - { name: following_id, type: user, label: Following, required: true, unique: true }
+
+  - name: bookmark
+    icon: i-lucide-bookmark
+    title: post_id
+    fields:
+      - { name: post_id, type: relation, to: post, required: true, unique: true, cascade: true }
+      - { name: note, type: text }
+
+dashboard:
+  - { type: count, entity: post, label: My posts, icon: i-lucide-message-square-text }
+  - { type: count, entity: comment, label: My comments, icon: i-lucide-messages-square }
+  - { type: count, entity: follow, label: Following, icon: i-lucide-user-plus }
+  - { type: count, entity: bookmark, label: Bookmarks, icon: i-lucide-bookmark }
+  - { type: breakdown, entity: post, field: topic, label: My posts by topic }
